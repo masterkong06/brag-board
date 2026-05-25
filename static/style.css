@@ -1,0 +1,102 @@
+/* ── Brag Board custom styles ── */
+
+body {
+  background: #f0f2f8;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Avatar chip */
+.avatar-chip {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: .95rem;
+  flex-shrink: 0;
+}
+.avatar-chip-sm {
+  width: 26px;
+  height: 26px;
+  font-size: .75rem;
+}
+
+/* Brag card */
+.brag-card {
+  border-left: 4px solid transparent;
+  transition: border-color .15s;
+}
+.brag-card:hover {
+  border-left-color: #4361ee;
+}
+
+/* Category badge */
+.category-badge {
+  background: #e9ecef;
+  color: #495057;
+  font-weight: 500;
+  font-size: .7rem;
+}
+
+/* Reaction buttons */
+.reaction-btn {
+  background: #f1f3f9;
+  border: 1px solid #e0e3ef;
+  border-radius: 20px;
+  font-size: .82rem;
+  padding: 2px 9px;
+  line-height: 1.6;
+  transition: background .1s, transform .1s;
+  cursor: pointer;
+}
+.reaction-btn:hover {
+  background: #dde1f5;
+  transform: scale(1.1);
+}
+.reaction-btn.active {
+  background: #c7d2fa;
+  border-color: #4361ee;
+  font-weight: 600;
+}
+.reaction-count {
+  font-size: .78rem;
+  opacity: .85;
+}
+
+/* Wish list */
+.wish-item {
+  background: #fff;
+  border: 1px solid #e9ecef;
+}
+.wish-done {
+  opacity: .55;
+}
+
+/* Pulse bar */
+.pulse-bar {
+  background: linear-gradient(90deg, #1a1a2e 0%, #2a2a5a 100%);
+  color: #e0e0ff;
+  font-size: .9rem;
+}
+
+/* Color swatches in settings */
+.color-swatch-label input[type=radio] { display: none; }
+.color-swatch {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: border-color .1s;
+}
+.color-swatch-label input[type=radio]:checked + .color-swatch {
+  border-color: #000;
+}
+
+/* Misc */
+.min-w-0 { min-width: 0; }
+details summary::-webkit-details-marker { color: #aaa; }

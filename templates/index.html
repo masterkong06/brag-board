@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Brag Board{% endblock %}
+{% block content %}
+
+{# ── Weekly pulse bar ── #}
+<div class="pulse-bar mb-4 px-3 py-2 rounded-3 d-flex align-items-center gap-2">
+  <span class="fw-semibold">This week:</span>
+  <span>{{ stats.brag_count }} brag{{ 's' if stats.brag_count != 1 }} from {{ stats.contributor_count }} person{{ 's' if stats.contributor_count != 1 }}</span>
+  <span class="ms-auto text-muted small">Keep it up 🙌</span>
+</div>
+
+<div class="row g-4">
+
+  {# ════════════════════════════════ LEFT: FEED ════════════════════════════ #}
+  <div class="col-lg-7">
+
+    {# Post-a-brag form #}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3">
+        <form method="post" action="{{ url_for('post_brag') }}">
+          <div class="d-flex gap-2 align-items-start">
+            <div class="avatar-chip flex-shrink-0 mt-1" style="background:{{ session.user_color }}">
+              {{ session.user_name[0].upper() }}
+            </div>
+            <div class="flex-grow-1">
+              <textarea name="content" class="form-control border-0 bg-light"
+                        rows="2" placeholder="I just did something awesome for everyone… 💪"
+                        required style="resize:none;"></textarea>
+              <div class="d-flex gap-2 mt-2 align-items-center flex-wrap">
+                <select name="category" class="form-select form-select-sm w-auto">
+                  {% for key, ico, label in categories %}
+                  <option value="{{ key }}">{{ ico }} {{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm ms-auto px-3 fw-semibold">
+                  🏆 Post Brag
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {# Brag feed #}
+    {% if not brags %}
+    <div class="text-center text-muted py-5">
+      <div style="font-size:3rem">🌱</div>
+      <p class="mt-2">No brags yet — be the first to post something awesome!</p>
+    </div>
+    {% endif %}
+
+    {% for brag in brags %}
+    {% set brag_reactions = reactions.get(brag.id, []) %}
+    <div class="card border-0 shadow-sm mb-3 brag-card" id="brag-{{ brag.id }}">
+      <div class="card-body p-3">
+        <div class="d-flex gap-2">
+          <div class="avatar-chip flex-shrink-0" style="background:{{ brag.user_color }}">
+            {{ brag.user_name[0].upper() }}
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-baseline gap-2 flex-wrap">
+              <span class="fw-semibold">{{ brag.user_name }}</span>
+              {% set cat_info = cat_map.get(brag.category, ('✨','Other')) %}
+              <span class="badge category-badge">{{ cat_info[0] }} {{ cat_info[1] }}</span>
+              <span class="text-muted small ms-auto">{{ brag.created_at[:16].replace('T',' ') }}</span>
+            </div>
+            <p class="mb-2 mt-1">{{ brag.content }}</p>
+
+            {# Reactions row #}
+            <div class="d-flex align-items-center gap-1 flex-wrap">
+              {% for emoji in emojis %}
+              {% set reacted_users = [] %}
+              {% for r in brag_reactions %}
+                {% if r.emoji == emoji %}{% set _ = reacted_users.append(r.user_name) %}{% endif %}
+              {% endfor %}
+              {% set active = current_user_name in reacted_users %}
+              <button class="btn btn-sm reaction-btn {{ 'active' if active }}"
+                      data-brag="{{ brag.id }}" data-emoji="{{ emoji }}"
+                      title="{{ reacted_users | join(', ') if reacted_users else '' }}">
+                {{ emoji }}{% if reacted_users %} <span class="reaction-count">{{ reacted_users | length }}</span>{% endif %}
+              </button>
+              {% endfor %}
+
+              {# Delete (own brag or admin) #}
+              {% if brag.user_id == current_user_id or session.is_admin %}
+              <form method="post" action="{{ url_for('delete_brag', brag_id=brag.id) }}"
+                    class="ms-auto" onsubmit="return confirm('Delete this brag?')">
+                <button type="submit" class="btn btn-link btn-sm text-muted p-0" style="font-size:.75rem">✕</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ════════════════════════════════ RIGHT: WISH LIST ══════════════════════ #}
+  <div class="col-lg-5" id="wishes">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pt-3 pb-0 px-3">
+        <h5 class="fw-bold mb-0">🌠 Wish List</h5>
+        <p class="text-muted small mb-2">Things it'd be awesome if someone got to…</p>
+      </div>
+      <div class="card-body p-3">
+
+        {# Add-a-wish form #}
+        <form method="post" action="{{ url_for('add_wish') }}" class="mb-3">
+          <div class="input-group input-group-sm">
+            <input name="content" type="text" class="form-control"
+                   placeholder="It'd be great if someone…" required>
+            <button type="submit" class="btn btn-outline-secondary">+ Add</button>
+          </div>
+        </form>
+
+        {# Open wishes #}
+        {% set open_wishes = wishes | selectattr('fulfilled_by_brag_id', 'none') | list %}
+        {% set done_wishes  = wishes | rejectattr('fulfilled_by_brag_id', 'none') | list %}
+
+        {% if not open_wishes %}
+        <p class="text-muted small text-center py-3">All wishes granted! ✨</p>
+        {% endif %}
+
+        {% for wish in open_wishes %}
+        <div class="wish-item d-flex align-items-start gap-2 mb-2 p-2 rounded-2">
+          <div class="avatar-chip avatar-chip-sm flex-shrink-0 mt-1" style="background:{{ wish.user_color }}">
+            {{ wish.user_name[0].upper() }}
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="small fw-semibold text-muted">{{ wish.user_name }} wishes…</div>
+            <div class="mb-1">{{ wish.content }}</div>
+            <div class="d-flex gap-1 align-items-center flex-wrap">
+              <form method="post" action="{{ url_for('claim_wish', wish_id=wish.id) }}" class="d-flex gap-1">
+                <select name="category" class="form-select form-select-sm" style="width:auto;font-size:.75rem;">
+                  {% for key, ico, label in categories %}
+                  <option value="{{ key }}">{{ ico }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-success py-0 px-2" style="font-size:.75rem;">
+                  ✅ I did it!
+                </button>
+              </form>
+              {% if wish.user_id == current_user_id or session.is_admin %}
+              <form method="post" action="{{ url_for('delete_wish', wish_id=wish.id) }}">
+                <button type="submit" class="btn btn-link btn-sm text-muted p-0" style="font-size:.7rem">✕</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        {# Fulfilled wishes (collapsed) #}
+        {% if done_wishes %}
+        <details class="mt-3">
+          <summary class="text-muted small" style="cursor:pointer;">
+            ✅ {{ done_wishes | length }} wish{{ 'es' if done_wishes|length != 1 }} granted
+          </summary>
+          <div class="mt-2">
+          {% for wish in done_wishes %}
+          <div class="wish-item wish-done d-flex align-items-start gap-2 mb-2 p-2 rounded-2">
+            <div class="avatar-chip avatar-chip-sm flex-shrink-0 mt-1" style="background:{{ wish.user_color }}">
+              {{ wish.user_name[0].upper() }}
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <span class="small text-muted text-decoration-line-through">{{ wish.content }}</span>
+            </div>
+          </div>
+          {% endfor %}
+          </div>
+        </details>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.reaction-btn').forEach(btn => {
+  btn.addEventListener('click', async function() {
+    const bragId = this.dataset.brag;
+    const emoji  = this.dataset.emoji;
+    const res = await fetch(`/react/${bragId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({emoji})
+    });
+    const data = await res.json();
+    if (data.error) return;
+
+    // Re-render all reaction buttons for this brag
+    const card = document.getElementById(`brag-${bragId}`);
+    card.querySelectorAll('.reaction-btn').forEach(b => {
+      const e = b.dataset.emoji;
+      const users = data.summary[e] || [];
+      const countEl = b.querySelector('.reaction-count');
+      b.classList.toggle('active', users.length > 0 && data.summary[e] &&
+        data.summary[e].includes({{ session.user_name | tojson }}));
+      b.title = users.join(', ');
+      if (users.length) {
+        if (countEl) countEl.textContent = users.length;
+        else b.innerHTML = e + ` <span class="reaction-count">${users.length}</span>`;
+      } else {
+        b.innerHTML = e;
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

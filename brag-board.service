@@ -1,0 +1,15 @@
+[Unit]
+Description=Brag Board — Family Contribution Tracker
+After=network.target
+
+[Service]
+Type=simple
+User=masterkong
+WorkingDirectory=/home/masterkong/projects/brag_board
+ExecStart=/home/masterkong/projects/brag_board/venv/bin/gunicorn -w 2 -b 0.0.0.0:5002 app:app
+Restart=on-failure
+RestartSec=5
+Environment=SECRET_KEY=bragboard_change_this_in_production
+
+[Install]
+WantedBy=multi-user.target

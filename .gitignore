@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+brag_board.db
+*.pid
+*.log
+.env
