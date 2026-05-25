@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Rewards — Brag Board{% endblock %}
+{% block content %}
+
+{# ── Points balance hero ── #}
+<div class="text-center mb-4">
+  <div class="display-4 fw-bold">{{ balance }}</div>
+  <div class="text-muted">points available</div>
+</div>
+
+{# ── Leaderboard ── #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4">
+    <h5 class="fw-bold mb-0">🏅 Leaderboard</h5>
+  </div>
+  <div class="card-body px-4 pb-3">
+    {% for entry in leaderboard %}
+    <div class="d-flex align-items-center gap-3 py-2 {% if not loop.last %}border-bottom{% endif %}">
+      <span class="fw-bold text-muted" style="width:1.5rem;">{{ loop.index }}</span>
+      <div class="avatar-chip avatar-chip-sm" style="background:{{ entry.color }}">
+        {{ entry.name[0].upper() }}
+      </div>
+      <div class="flex-grow-1 fw-semibold">{{ entry.name }}</div>
+      <div class="text-end">
+        <span class="fw-bold">{{ entry.balance }}</span>
+        <span class="text-muted small"> pts</span>
+        <div class="text-muted" style="font-size:.7rem;">{{ entry.earned }} earned · {{ entry.spent }} spent</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── Available rewards ── #}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4">
+    <h5 class="fw-bold mb-0">🎁 Available Rewards</h5>
+  </div>
+  <div class="card-body px-4 pb-3">
+    {% if not rewards %}
+    <p class="text-muted small mb-0">No rewards set up yet. Ask an admin to add some!</p>
+    {% endif %}
+    <div class="row g-3">
+      {% for reward in rewards %}
+      <div class="col-sm-6 col-lg-4">
+        <div class="card h-100 border {% if balance >= reward.points_cost %}border-success{% else %}border-secondary opacity-75{% endif %}">
+          <div class="card-body">
+            <div class="fw-bold mb-1">{{ reward.name }}</div>
+            {% if reward.description %}
+            <div class="text-muted small mb-2">{{ reward.description }}</div>
+            {% endif %}
+            <div class="fw-bold fs-5 mb-3">
+              {{ reward.points_cost }} <span class="text-muted small fw-normal">pts</span>
+            </div>
+            {% if balance >= reward.points_cost %}
+            <form method="post" action="{{ url_for('redeem_reward', reward_id=reward.id) }}">
+              <button class="btn btn-success btn-sm w-100">Redeem</button>
+            </form>
+            {% else %}
+            <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+              Need {{ reward.points_cost - balance }} more pts
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# ── My redemption history ── #}
+{% if my_redemptions %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4">
+    <h5 class="fw-bold mb-0">📋 My Requests</h5>
+  </div>
+  <div class="card-body px-4 pb-3">
+    {% for r in my_redemptions %}
+    <div class="d-flex align-items-center gap-3 py-2 {% if not loop.last %}border-bottom{% endif %}">
+      <div class="flex-grow-1">
+        <div class="fw-semibold">{{ r.reward_name }}</div>
+        <div class="text-muted small">{{ r.requested_at[:10] }}</div>
+      </div>
+      <span class="badge {% if r.status == 'approved' %}bg-success{% elif r.status == 'denied' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+        {{ r.status }}
+      </span>
+      <span class="text-muted small">{{ r.points_cost }} pts</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Admin panel ── #}
+{% if session.is_admin %}
+<div id="admin" class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4">
+    <h5 class="fw-bold mb-0">⚙️ Admin — Manage Rewards</h5>
+  </div>
+  <div class="card-body px-4 pb-4">
+
+    {# Pending redemptions #}
+    {% if pending %}
+    <h6 class="fw-semibold mb-2 mt-1">🔔 Pending Approvals</h6>
+    {% for r in pending %}
+    <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+      <div class="avatar-chip avatar-chip-sm" style="background:{{ r.user_color }}">
+        {{ r.user_name[0].upper() }}
+      </div>
+      <div class="flex-grow-1">
+        <span class="fw-semibold">{{ r.user_name }}</span>
+        <span class="text-muted"> wants </span>
+        <span class="fw-semibold">{{ r.reward_name }}</span>
+        <span class="text-muted small"> ({{ r.points_cost }} pts)</span>
+      </div>
+      <form method="post" action="{{ url_for('resolve_redemption', redemption_id=r.id, status='approved') }}" class="d-inline">
+        <button class="btn btn-success btn-sm">✓ Approve</button>
+      </form>
+      <form method="post" action="{{ url_for('resolve_redemption', redemption_id=r.id, status='denied') }}" class="d-inline">
+        <button class="btn btn-outline-danger btn-sm">✗ Deny</button>
+      </form>
+    </div>
+    {% endfor %}
+    <div class="mb-3"></div>
+    {% endif %}
+
+    {# Create reward #}
+    <h6 class="fw-semibold mb-2">➕ Add Reward</h6>
+    <form method="post" action="{{ url_for('create_reward') }}" class="row g-2 mb-4">
+      <div class="col-sm-4">
+        <input name="name" class="form-control form-control-sm" placeholder="Reward name" required>
+      </div>
+      <div class="col-sm-4">
+        <input name="description" class="form-control form-control-sm" placeholder="Description (optional)">
+      </div>
+      <div class="col-sm-2">
+        <input name="points_cost" type="number" min="1" class="form-control form-control-sm" placeholder="Points" required>
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-primary btn-sm w-100">Add</button>
+      </div>
+    </form>
+
+    {# Manage existing rewards #}
+    {% if all_rewards %}
+    <h6 class="fw-semibold mb-2">📝 All Rewards</h6>
+    {% for reward in all_rewards %}
+    <div class="d-flex align-items-center gap-2 py-1 border-bottom">
+      <div class="flex-grow-1">
+        <span class="{% if not reward.is_active %}text-muted text-decoration-line-through{% endif %}">
+          {{ reward.name }}
+        </span>
+        <span class="text-muted small ms-2">{{ reward.points_cost }} pts</span>
+      </div>
+      <form method="post" action="{{ url_for('toggle_reward', reward_id=reward.id) }}">
+        <button class="btn btn-sm {% if reward.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %} py-0 px-2">
+          {{ 'Disable' if reward.is_active else 'Enable' }}
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {# Category point values #}
+    <h6 class="fw-semibold mt-4 mb-2">⭐ Points per Category</h6>
+    <form method="post" action="{{ url_for('update_category_points') }}" class="row g-2">
+      {% for key, ico, label in categories %}
+      <div class="col-6 col-sm-4 col-md-2">
+        <label class="form-label small mb-1">{{ ico }} {{ label }}</label>
+        <input name="pts_{{ key }}" type="number" min="0"
+               value="{{ cat_pts.get(key, 1) }}"
+               class="form-control form-control-sm text-center">
+      </div>
+      {% endfor %}
+      <div class="col-12">
+        <button class="btn btn-primary btn-sm">Save Points</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

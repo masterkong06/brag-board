@@ -82,6 +82,8 @@ def index():
     wishes = db.get_wishes()
     stats = db.weekly_stats()
     cat_map = {k: (ico, label) for k, ico, label in CATEGORIES}
+    cat_pts = db.get_category_points()
+    my_balance = db.get_user_points_balance(session["user_id"])
     return render_template(
         "index.html",
         brags=brags,
@@ -90,6 +92,8 @@ def index():
         stats=stats,
         categories=CATEGORIES,
         cat_map=cat_map,
+        cat_pts=cat_pts,
+        my_balance=my_balance,
         emojis=EMOJIS,
         current_user_id=session["user_id"],
         current_user_name=session["user_name"],
@@ -169,6 +173,99 @@ def delete_wish(wish_id):
 
 
 # ---------------------------------------------------------------------------
+# Rewards (all users — view & redeem; admin — manage)
+# ---------------------------------------------------------------------------
+
+@app.route("/rewards")
+@login_required
+def rewards():
+    rewards_list  = db.get_active_rewards()
+    cat_pts       = db.get_category_points()
+    balance       = db.get_user_points_balance(session["user_id"])
+    my_redemptions = db.get_user_redemptions(session["user_id"])
+    leaderboard   = db.get_all_balances()
+    pending       = db.get_pending_redemptions() if session.get("is_admin") else []
+    all_rewards   = db.get_all_rewards()         if session.get("is_admin") else []
+    return render_template(
+        "rewards.html",
+        rewards=rewards_list,
+        cat_pts=cat_pts,
+        balance=balance,
+        my_redemptions=my_redemptions,
+        leaderboard=leaderboard,
+        pending=pending,
+        all_rewards=all_rewards,
+        categories=CATEGORIES,
+    )
+
+
+@app.route("/rewards/redeem/<int:reward_id>", methods=["POST"])
+@login_required
+def redeem_reward(reward_id):
+    reward = next((r for r in db.get_active_rewards() if r["id"] == reward_id), None)
+    if not reward:
+        flash("Reward not found.", "danger")
+        return redirect(url_for("rewards"))
+    balance = db.get_user_points_balance(session["user_id"])
+    if balance < reward["points_cost"]:
+        flash("Not enough points for that reward.", "danger")
+        return redirect(url_for("rewards"))
+    db.request_redemption(session["user_id"], reward_id)
+    flash(f"Redemption request sent for '{reward['name']}'! Waiting for approval.", "success")
+    return redirect(url_for("rewards"))
+
+
+@app.route("/rewards/resolve/<int:redemption_id>/<status>", methods=["POST"])
+@admin_required
+def resolve_redemption(redemption_id, status):
+    if status not in ("approved", "denied"):
+        return redirect(url_for("rewards"))
+    db.resolve_redemption(redemption_id, status, session["user_id"])
+    flash(f"Redemption {status}.", "success")
+    return redirect(url_for("rewards") + "#admin")
+
+
+@app.route("/rewards/create", methods=["POST"])
+@admin_required
+def create_reward():
+    name        = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+    points_cost = request.form.get("points_cost", "0")
+    try:
+        points_cost = int(points_cost)
+        assert points_cost > 0
+    except (ValueError, AssertionError):
+        flash("Points cost must be a positive number.", "danger")
+        return redirect(url_for("rewards") + "#admin")
+    if name:
+        db.create_reward(name, description, points_cost, session["user_id"])
+        flash(f"Reward '{name}' created.", "success")
+    return redirect(url_for("rewards") + "#admin")
+
+
+@app.route("/rewards/toggle/<int:reward_id>", methods=["POST"])
+@admin_required
+def toggle_reward(reward_id):
+    db.toggle_reward_active(reward_id)
+    return redirect(url_for("rewards") + "#admin")
+
+
+@app.route("/rewards/points", methods=["POST"])
+@admin_required
+def update_category_points():
+    for key, ico, label in CATEGORIES:
+        val = request.form.get(f"pts_{key}", "")
+        try:
+            pts = int(val)
+            if pts >= 0:
+                db.set_category_points(key, pts)
+        except ValueError:
+            pass
+    flash("Point values updated.", "success")
+    return redirect(url_for("rewards") + "#admin")
+
+
+# ---------------------------------------------------------------------------
 # Profile (all users)
 # ---------------------------------------------------------------------------
 
@@ -234,6 +331,7 @@ def delete_user(user_id):
 # ---------------------------------------------------------------------------
 
 db.init_db()
+db.seed_category_points()
 _seed_admin()
 
 if __name__ == "__main__":
