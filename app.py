@@ -55,6 +55,7 @@ def login():
         if user and verify_password(password, user["password_hash"]):
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
+            session["username"] = user["username"]
             session["user_color"] = user["color"]
             session["is_admin"] = bool(user["is_admin"])
             return redirect(url_for("index"))
@@ -165,6 +166,25 @@ def delete_wish(wish_id):
     if wish and (session.get("is_admin") or wish["user_id"] == session["user_id"]):
         db.delete_wish(wish_id)
     return redirect(url_for("index") + "#wishes")
+
+
+# ---------------------------------------------------------------------------
+# Profile (all users)
+# ---------------------------------------------------------------------------
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    if request.method == "POST":
+        new_name = request.form.get("name", "").strip()
+        if new_name:
+            db.update_user_name(session["user_id"], new_name)
+            session["user_name"] = new_name
+            flash("Display name updated!", "success")
+        else:
+            flash("Name can't be empty.", "danger")
+        return redirect(url_for("profile"))
+    return render_template("profile.html")
 
 
 # ---------------------------------------------------------------------------

@@ -90,6 +90,14 @@ def delete_user(user_id):
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
 
 
+def update_user_name(user_id, new_name):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE users SET name = ? WHERE id = ?",
+            (new_name, user_id),
+        )
+
+
 def user_count():
     with _conn() as conn:
         return conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]

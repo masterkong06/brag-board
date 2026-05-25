@@ -23,6 +23,11 @@ body {
   height: 26px;
   font-size: .75rem;
 }
+.avatar-lg {
+  width: 56px;
+  height: 56px;
+  font-size: 1.5rem;
+}
 
 /* Brag card */
 .brag-card {

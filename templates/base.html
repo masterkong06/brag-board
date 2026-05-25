@@ -19,12 +19,12 @@
       {% if session.is_admin %}
       <a href="{{ url_for('settings') }}" class="text-white-50 small text-decoration-none">⚙️ Settings</a>
       {% endif %}
-      <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('profile') }}" class="d-flex align-items-center gap-2 text-decoration-none">
         <div class="avatar-chip" style="background:{{ session.user_color }}">
           {{ session.user_name[0].upper() }}
         </div>
         <span class="text-white small">{{ session.user_name }}</span>
-      </div>
+      </a>
       <a href="{{ url_for('logout') }}" class="text-white-50 small text-decoration-none">Sign out</a>
     </div>
   </div>
