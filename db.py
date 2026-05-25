@@ -359,7 +359,7 @@ def get_all_balances():
     """Returns [{user_id, name, color, earned, spent, balance}] for leaderboard."""
     with _conn() as conn:
         earned_rows = conn.execute("""
-            SELECT b.user_id, u.name, u.color,
+            SELECT u.id AS user_id, u.name, u.color,
                    COALESCE(SUM(COALESCE(cp.points, 1)), 0) AS earned
             FROM users u
             LEFT JOIN brags b ON b.user_id = u.id
