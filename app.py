@@ -230,10 +230,11 @@ def delete_user(user_id):
 
 
 # ---------------------------------------------------------------------------
-# Bootstrap
+# Bootstrap — runs under both gunicorn and `python app.py`
 # ---------------------------------------------------------------------------
 
+db.init_db()
+_seed_admin()
+
 if __name__ == "__main__":
-    db.init_db()
-    _seed_admin()
     app.run(host="0.0.0.0", port=5002, debug=False)
