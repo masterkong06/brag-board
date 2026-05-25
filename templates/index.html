@@ -27,9 +27,9 @@
               {{ session.user_name[0].upper() }}
             </div>
             <div class="flex-grow-1">
-              <textarea name="content" class="form-control border-0 bg-light"
+              <textarea name="content" class="form-control brag-textarea"
                         rows="2" placeholder="I just did something awesome for everyone… 💪"
-                        required style="resize:none;"></textarea>
+                        required></textarea>
               <div class="d-flex gap-2 mt-2 align-items-center flex-wrap">
                 <select name="category" class="form-select form-select-sm w-auto">
                   {% for key, ico, label in categories %}

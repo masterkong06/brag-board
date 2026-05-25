@@ -1,11 +1,11 @@
-/* ── Brag Board custom styles ── */
+/* ==========================================================================
+   Brag Board — App-specific styles
+   Loaded after simian-theme.css. Uses CSS variables defined there.
+   ========================================================================== */
 
-body {
-  background: #f0f2f8;
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-/* Avatar chip */
+/* ==========================================================================
+   Avatar chips
+   ========================================================================== */
 .avatar-chip {
   width: 36px;
   height: 36px;
@@ -29,41 +29,55 @@ body {
   font-size: 1.5rem;
 }
 
-/* Brag card */
+/* ==========================================================================
+   Brag card
+   ========================================================================== */
 .brag-card {
-  border-left: 4px solid transparent;
-  transition: border-color .15s;
+  border-left: 3px solid transparent !important;
+  transition: border-color .2s, background .2s, box-shadow .2s !important;
 }
 .brag-card:hover {
-  border-left-color: #4361ee;
+  border-left-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 1px rgba(0,112,243,0.15),
+              0 8px 24px rgba(0,0,0,0.4) !important;
+  transform: none; /* override card :hover translateY */
 }
 
-/* Category badge */
+/* ==========================================================================
+   Category badge
+   ========================================================================== */
 .category-badge {
-  background: #e9ecef;
-  color: #495057;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border-subtle);
   font-weight: 500;
   font-size: .7rem;
 }
 
-/* Reaction buttons */
+/* ==========================================================================
+   Reaction buttons
+   ========================================================================== */
 .reaction-btn {
-  background: #f1f3f9;
-  border: 1px solid #e0e3ef;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
   border-radius: 20px;
   font-size: .82rem;
   padding: 2px 9px;
   line-height: 1.6;
-  transition: background .1s, transform .1s;
+  transition: var(--transition-smooth);
   cursor: pointer;
+  color: var(--text-muted);
 }
 .reaction-btn:hover {
-  background: #dde1f5;
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.08);
+  color: var(--text-main);
 }
 .reaction-btn.active {
-  background: #c7d2fa;
-  border-color: #4361ee;
+  background: rgba(0, 112, 243, 0.2);
+  border-color: rgba(0, 112, 243, 0.5);
+  color: #60a5fa;
   font-weight: 600;
 }
 .reaction-count {
@@ -71,23 +85,50 @@ body {
   opacity: .85;
 }
 
-/* Wish list */
-.wish-item {
-  background: #fff;
-  border: 1px solid #e9ecef;
-}
-.wish-done {
-  opacity: .55;
-}
-
-/* Pulse bar */
+/* ==========================================================================
+   Pulse / stats bar
+   ========================================================================== */
 .pulse-bar {
-  background: linear-gradient(90deg, #1a1a2e 0%, #2a2a5a 100%);
-  color: #e0e0ff;
+  background: linear-gradient(90deg,
+    rgba(6, 9, 19, 0.9) 0%,
+    rgba(15, 32, 66, 0.85) 100%);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+  color: var(--text-muted);
   font-size: .9rem;
 }
+.pulse-bar .fw-semibold { color: var(--text-main); }
+.pulse-bar a { color: #fbbf24; text-decoration: none; }
+.pulse-bar a:hover { color: #fcd34d; }
 
-/* Color swatches in settings */
+/* ==========================================================================
+   Wish list
+   ========================================================================== */
+.wish-item {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md);
+}
+.wish-done { opacity: .45; }
+
+/* ==========================================================================
+   Post-brag textarea
+   ========================================================================== */
+.brag-textarea {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-main) !important;
+  resize: none;
+}
+.brag-textarea:focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px var(--border-focus) !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ==========================================================================
+   Color swatches (settings)
+   ========================================================================== */
 .color-swatch-label input[type=radio] { display: none; }
 .color-swatch {
   display: block;
@@ -96,12 +137,14 @@ body {
   border-radius: 50%;
   cursor: pointer;
   border: 3px solid transparent;
-  transition: border-color .1s;
+  transition: border-color .15s;
 }
 .color-swatch-label input[type=radio]:checked + .color-swatch {
-  border-color: #000;
+  border-color: rgba(255, 255, 255, 0.85);
 }
 
-/* Misc */
+/* ==========================================================================
+   Misc
+   ========================================================================== */
 .min-w-0 { min-width: 0; }
-details summary::-webkit-details-marker { color: #aaa; }
+details summary::-webkit-details-marker { color: var(--text-muted); }
