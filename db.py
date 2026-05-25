@@ -37,6 +37,31 @@ CREATE TABLE IF NOT EXISTS wishes (
     fulfilled_by_brag_id INTEGER REFERENCES brags(id),
     created_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS category_points (
+    category TEXT PRIMARY KEY,
+    points INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    points_cost INTEGER NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS redemptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    reward_id INTEGER NOT NULL REFERENCES rewards(id),
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending | approved | denied
+    requested_at TEXT DEFAULT (datetime('now')),
+    resolved_at TEXT,
+    resolved_by INTEGER REFERENCES users(id)
+);
 """
 
 
@@ -260,3 +285,194 @@ def delete_wish(wish_id):
             "DELETE FROM wishes WHERE id = ? AND fulfilled_by_brag_id IS NULL",
             (wish_id,)
         )
+
+
+# ---------------------------------------------------------------------------
+# Points
+# ---------------------------------------------------------------------------
+
+DEFAULT_POINTS = {
+    "kitchen": 3,
+    "home":    4,
+    "yard":    5,
+    "pets":    3,
+    "errands": 2,
+    "other":   1,
+}
+
+
+def seed_category_points():
+    """Insert default points for any category not yet configured."""
+    with _conn() as conn:
+        for cat, pts in DEFAULT_POINTS.items():
+            conn.execute(
+                "INSERT OR IGNORE INTO category_points (category, points) VALUES (?, ?)",
+                (cat, pts),
+            )
+
+
+def get_category_points():
+    """Returns {category: points} dict."""
+    with _conn() as conn:
+        rows = conn.execute("SELECT category, points FROM category_points").fetchall()
+    return {r["category"]: r["points"] for r in rows}
+
+
+def set_category_points(category, points):
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO category_points (category, points) VALUES (?, ?)"
+            " ON CONFLICT(category) DO UPDATE SET points=excluded.points",
+            (category, points),
+        )
+
+
+def get_user_points(user_id):
+    """Total points earned by a user (sum of points for all their brags)."""
+    with _conn() as conn:
+        row = conn.execute("""
+            SELECT COALESCE(SUM(COALESCE(cp.points, 1)), 0) AS total
+            FROM brags b
+            LEFT JOIN category_points cp ON b.category = cp.category
+            WHERE b.user_id = ?
+        """, (user_id,)).fetchone()
+    return row["total"]
+
+
+def get_user_points_spent(user_id):
+    """Points already spent on approved redemptions."""
+    with _conn() as conn:
+        row = conn.execute("""
+            SELECT COALESCE(SUM(r.points_cost), 0) AS spent
+            FROM redemptions red
+            JOIN rewards r ON red.reward_id = r.id
+            WHERE red.user_id = ? AND red.status = 'approved'
+        """, (user_id,)).fetchone()
+    return row["spent"]
+
+
+def get_user_points_balance(user_id):
+    return get_user_points(user_id) - get_user_points_spent(user_id)
+
+
+def get_all_balances():
+    """Returns [{user_id, name, color, earned, spent, balance}] for leaderboard."""
+    with _conn() as conn:
+        earned_rows = conn.execute("""
+            SELECT b.user_id, u.name, u.color,
+                   COALESCE(SUM(COALESCE(cp.points, 1)), 0) AS earned
+            FROM users u
+            LEFT JOIN brags b ON b.user_id = u.id
+            LEFT JOIN category_points cp ON b.category = cp.category
+            GROUP BY u.id
+        """).fetchall()
+        spent_rows = conn.execute("""
+            SELECT red.user_id,
+                   COALESCE(SUM(r.points_cost), 0) AS spent
+            FROM redemptions red
+            JOIN rewards r ON red.reward_id = r.id
+            WHERE red.status = 'approved'
+            GROUP BY red.user_id
+        """).fetchall()
+    spent_map = {r["user_id"]: r["spent"] for r in spent_rows}
+    result = []
+    for r in earned_rows:
+        earned = r["earned"]
+        spent  = spent_map.get(r["user_id"], 0)
+        result.append({
+            "user_id": r["user_id"],
+            "name":    r["name"],
+            "color":   r["color"],
+            "earned":  earned,
+            "spent":   spent,
+            "balance": earned - spent,
+        })
+    return sorted(result, key=lambda x: x["balance"], reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Rewards
+# ---------------------------------------------------------------------------
+
+def get_active_rewards():
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM rewards WHERE is_active=1 ORDER BY points_cost"
+        ).fetchall()
+
+
+def get_all_rewards():
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM rewards ORDER BY is_active DESC, points_cost"
+        ).fetchall()
+
+
+def create_reward(name, description, points_cost, created_by):
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO rewards (name, description, points_cost, created_by)"
+            " VALUES (?, ?, ?, ?)",
+            (name, description, points_cost, created_by),
+        )
+        return cur.lastrowid
+
+
+def toggle_reward_active(reward_id):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE rewards SET is_active = 1 - is_active WHERE id = ?",
+            (reward_id,),
+        )
+
+
+def delete_reward(reward_id):
+    with _conn() as conn:
+        conn.execute("DELETE FROM rewards WHERE id = ?", (reward_id,))
+
+
+# ---------------------------------------------------------------------------
+# Redemptions
+# ---------------------------------------------------------------------------
+
+def get_pending_redemptions():
+    with _conn() as conn:
+        return conn.execute("""
+            SELECT red.*, u.name AS user_name, u.color AS user_color,
+                   r.name AS reward_name, r.points_cost
+            FROM redemptions red
+            JOIN users u ON red.user_id = u.id
+            JOIN rewards r ON red.reward_id = r.id
+            WHERE red.status = 'pending'
+            ORDER BY red.requested_at
+        """).fetchall()
+
+
+def get_user_redemptions(user_id):
+    with _conn() as conn:
+        return conn.execute("""
+            SELECT red.*, r.name AS reward_name, r.points_cost
+            FROM redemptions red
+            JOIN rewards r ON red.reward_id = r.id
+            WHERE red.user_id = ?
+            ORDER BY red.requested_at DESC
+        """, (user_id,)).fetchall()
+
+
+def request_redemption(user_id, reward_id):
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO redemptions (user_id, reward_id) VALUES (?, ?)",
+            (user_id, reward_id),
+        )
+        return cur.lastrowid
+
+
+def resolve_redemption(redemption_id, status, resolved_by):
+    """status: 'approved' or 'denied'"""
+    with _conn() as conn:
+        conn.execute("""
+            UPDATE redemptions
+            SET status=?, resolved_at=datetime('now'), resolved_by=?
+            WHERE id=?
+        """, (status, resolved_by, redemption_id))
