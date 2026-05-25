@@ -2,23 +2,54 @@
 {% block title %}My Profile — Brag Board{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-sm-10 col-md-6 col-lg-4">
+  <div class="col-sm-10 col-md-6 col-lg-5">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-transparent border-0 pt-3 pb-0 px-4">
-        <h5 class="fw-bold mb-0">✏️ Edit Profile</h5>
+        <h5 class="fw-bold mb-0">✏️ My Profile</h5>
       </div>
       <div class="card-body px-4 pb-4">
 
+        {# Avatar + stats #}
         <div class="d-flex align-items-center gap-3 my-3">
           <div class="avatar-chip avatar-lg" style="background:{{ session.user_color }}">
             {{ session.user_name[0].upper() }}
           </div>
           <div>
-            <div class="fw-semibold">{{ session.user_name }}</div>
+            <div class="fw-bold fs-5">{{ session.user_name }}</div>
             <div class="text-muted small">@{{ session.username }}</div>
+            <div class="mt-1 d-flex flex-wrap gap-3">
+              <span class="small">⭐ <strong>{{ my_balance }}</strong> pts</span>
+              {% if my_streak >= 1 %}
+              <span class="small fw-semibold" style="color:#f97316;">🔥 {{ my_streak }}-day streak</span>
+              {% endif %}
+              {% if longest_streak > my_streak and longest_streak > 1 %}
+              <span class="small text-muted">Best: {{ longest_streak }} days</span>
+              {% endif %}
+            </div>
           </div>
         </div>
 
+        {# Badges #}
+        <div class="mb-4">
+          <div class="small fw-semibold mb-2" style="color:var(--text-muted);letter-spacing:.06em;">BADGES</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for badge in all_badges %}
+            {% set earned = badge.slug in held_slugs %}
+            <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill"
+                  style="background:{% if earned %}rgba(255,255,255,0.1){% else %}rgba(255,255,255,0.03){% endif %};
+                         border:1px solid {% if earned %}rgba(255,255,255,0.2){% else %}rgba(255,255,255,0.06){% endif %};
+                         font-size:.8rem;{% if not earned %}opacity:.45;{% endif %}"
+                  title="{{ badge.name }}: {{ badge.desc }}">
+              {{ badge.emoji }}
+              <span class="{% if not earned %}text-muted{% endif %}" style="font-size:.75rem;">{{ badge.name }}</span>
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        {# Edit name form #}
         <form method="post">
           <div class="mb-3">
             <label class="form-label small fw-semibold">Display Name</label>
