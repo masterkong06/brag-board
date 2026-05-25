@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import date, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "brag_board.db")
 
@@ -36,6 +37,14 @@ CREATE TABLE IF NOT EXISTS wishes (
     content TEXT NOT NULL,
     fulfilled_by_brag_id INTEGER REFERENCES brags(id),
     created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS user_badges (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL REFERENCES users(id),
+    badge_slug TEXT NOT NULL,
+    awarded_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, badge_slug)
 );
 
 CREATE TABLE IF NOT EXISTS category_points (
@@ -476,3 +485,120 @@ def resolve_redemption(redemption_id, status, resolved_by):
             SET status=?, resolved_at=datetime('now'), resolved_by=?
             WHERE id=?
         """, (status, resolved_by, redemption_id))
+
+
+# ---------------------------------------------------------------------------
+# Streaks
+# ---------------------------------------------------------------------------
+
+def get_user_streak(user_id):
+    """Current consecutive-day streak (counts today and/or yesterday as active)."""
+    with _conn() as conn:
+        rows = conn.execute("""
+            SELECT DISTINCT date(created_at) AS brag_date
+            FROM brags WHERE user_id = ?
+            ORDER BY brag_date DESC
+        """, (user_id,)).fetchall()
+    if not rows:
+        return 0
+    dates = [date.fromisoformat(r["brag_date"]) for r in rows]
+    today = date.today()
+    # Streak is active if most recent brag was today or yesterday
+    if dates[0] < today - timedelta(days=1):
+        return 0
+    streak = 1
+    for i in range(1, len(dates)):
+        if dates[i - 1] - dates[i] == timedelta(days=1):
+            streak += 1
+        else:
+            break
+    return streak
+
+
+def get_user_longest_streak(user_id):
+    """All-time longest consecutive-day streak."""
+    with _conn() as conn:
+        rows = conn.execute("""
+            SELECT DISTINCT date(created_at) AS brag_date
+            FROM brags WHERE user_id = ?
+            ORDER BY brag_date DESC
+        """, (user_id,)).fetchall()
+    if not rows:
+        return 0
+    dates = [date.fromisoformat(r["brag_date"]) for r in rows]
+    longest = current = 1
+    for i in range(1, len(dates)):
+        if dates[i - 1] - dates[i] == timedelta(days=1):
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 1
+    return longest
+
+
+def get_category_count(user_id, category):
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM brags WHERE user_id=? AND category=?",
+            (user_id, category),
+        ).fetchone()
+    return row["cnt"]
+
+
+def get_total_brag_count(user_id):
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM brags WHERE user_id=?",
+            (user_id,),
+        ).fetchone()
+    return row["cnt"]
+
+
+def get_wish_claim_count(user_id):
+    """Number of wishes this user has fulfilled."""
+    with _conn() as conn:
+        row = conn.execute("""
+            SELECT COUNT(*) AS cnt FROM brags b
+            JOIN wishes w ON w.fulfilled_by_brag_id = b.id
+            WHERE b.user_id = ?
+        """, (user_id,)).fetchone()
+    return row["cnt"]
+
+
+# ---------------------------------------------------------------------------
+# Badges
+# ---------------------------------------------------------------------------
+
+def award_badge(user_id, badge_slug):
+    """Insert badge if not already held. Returns True if newly awarded."""
+    with _conn() as conn:
+        try:
+            conn.execute(
+                "INSERT INTO user_badges (user_id, badge_slug) VALUES (?, ?)",
+                (user_id, badge_slug),
+            )
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+
+def get_user_badges(user_id):
+    """Returns list of badge slugs the user holds, ordered by awarded_at."""
+    with _conn() as conn:
+        rows = conn.execute(
+            "SELECT badge_slug, awarded_at FROM user_badges WHERE user_id=? ORDER BY awarded_at",
+            (user_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_all_user_badges():
+    """Returns {user_id: [slug, ...]} for all users (for leaderboard display)."""
+    with _conn() as conn:
+        rows = conn.execute(
+            "SELECT user_id, badge_slug FROM user_badges ORDER BY awarded_at"
+        ).fetchall()
+    result = {}
+    for r in rows:
+        result.setdefault(r["user_id"], []).append(r["badge_slug"])
+    return result
