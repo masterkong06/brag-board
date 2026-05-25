@@ -6,3 +6,5 @@ brag_board.db
 *.pid
 *.log
 .env
+*.TEMP.txt
+.deploy_keys_TEMP.txt
