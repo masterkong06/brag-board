@@ -2,6 +2,7 @@ import os
 import secrets
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import db
+import badges as badge_engine
 from auth import hash_password, verify_password, login_required, admin_required
 
 app = Flask(__name__)
@@ -82,8 +83,10 @@ def index():
     wishes = db.get_wishes()
     stats = db.weekly_stats()
     cat_map = {k: (ico, label) for k, ico, label in CATEGORIES}
-    cat_pts = db.get_category_points()
+    cat_pts    = db.get_category_points()
     my_balance = db.get_user_points_balance(session["user_id"])
+    my_streak  = db.get_user_streak(session["user_id"])
+    all_badges = db.get_all_user_badges()
     return render_template(
         "index.html",
         brags=brags,
@@ -94,6 +97,9 @@ def index():
         cat_map=cat_map,
         cat_pts=cat_pts,
         my_balance=my_balance,
+        my_streak=my_streak,
+        all_badges=all_badges,
+        badge_map=badge_engine.BADGE_MAP,
         emojis=EMOJIS,
         current_user_id=session["user_id"],
         current_user_name=session["user_name"],
@@ -107,6 +113,9 @@ def post_brag():
     category = request.form.get("category", "other")
     if content:
         db.post_brag(session["user_id"], content, category)
+        newly = badge_engine.check_and_award(session["user_id"])
+        for b in newly:
+            flash(f"{b['emoji']} New badge unlocked: <strong>{b['name']}</strong> — {b['desc']}", "success")
     return redirect(url_for("index"))
 
 
@@ -160,6 +169,9 @@ def add_wish():
 def claim_wish(wish_id):
     category = request.form.get("category", "other")
     db.claim_wish(wish_id, session["user_id"], category)
+    newly = badge_engine.check_and_award(session["user_id"])
+    for b in newly:
+        flash(f"{b['emoji']} New badge unlocked: <strong>{b['name']}</strong> — {b['desc']}", "success")
     return redirect(url_for("index"))
 
 
@@ -281,7 +293,23 @@ def profile():
         else:
             flash("Name can't be empty.", "danger")
         return redirect(url_for("profile"))
-    return render_template("profile.html")
+    uid           = session["user_id"]
+    my_badges     = db.get_user_badges(uid)
+    my_streak     = db.get_user_streak(uid)
+    longest       = db.get_user_longest_streak(uid)
+    my_balance    = db.get_user_points_balance(uid)
+    all_badge_def = badge_engine.BADGES
+    held_slugs    = {b["badge_slug"] for b in my_badges}
+    return render_template(
+        "profile.html",
+        my_badges=my_badges,
+        my_streak=my_streak,
+        longest_streak=longest,
+        my_balance=my_balance,
+        all_badges=all_badge_def,
+        held_slugs=held_slugs,
+        badge_map=badge_engine.BADGE_MAP,
+    )
 
 
 # ---------------------------------------------------------------------------
