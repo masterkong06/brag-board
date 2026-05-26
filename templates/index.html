@@ -39,10 +39,15 @@
                   <option value="{{ key }}">{{ ico }} {{ label }}</option>
                   {% endfor %}
                 </select>
-                <label class="photo-upload-label btn btn-sm btn-outline-secondary" for="photo-input" title="Attach a photo">
-                  📸
-                </label>
-                <input type="file" name="photo" id="photo-input" accept="image/*" class="photo-file-input" capture="environment">
+                <div class="photo-picker-wrap">
+                  <button type="button" class="btn btn-sm btn-outline-secondary photo-toggle-btn"
+                          id="photo-toggle" title="Attach a photo">📸</button>
+                  <div class="photo-picker-menu" id="photo-menu">
+                    <button type="button" class="photo-picker-option" data-capture="environment">📷 Take Photo</button>
+                    <button type="button" class="photo-picker-option" data-capture="">🖼️ Choose from Gallery</button>
+                  </div>
+                </div>
+                <input type="file" name="photo" id="photo-input" accept="image/*" class="photo-file-input">
                 <button type="submit" class="btn btn-primary btn-sm ms-auto px-3 fw-semibold">
                   🏆 Post Brag
                 </button>
@@ -214,40 +219,63 @@
 
 {% block scripts %}
 <script>
-// Photo upload preview
+// Photo picker — camera vs gallery chooser
 (function() {
-  const fileInput  = document.getElementById('photo-input');
-  const previewWrap= document.querySelector('.photo-preview-wrap');
-  const previewImg = document.querySelector('.photo-preview-img');
-  const clearBtn   = document.querySelector('.photo-clear-btn');
-  const label      = document.querySelector('.photo-upload-label');
+  const fileInput   = document.getElementById('photo-input');
+  const toggleBtn   = document.getElementById('photo-toggle');
+  const menu        = document.getElementById('photo-menu');
+  const previewWrap = document.querySelector('.photo-preview-wrap');
+  const previewImg  = document.querySelector('.photo-preview-img');
+  const clearBtn    = document.querySelector('.photo-clear-btn');
 
-  fileInput.addEventListener('change', function() {
-    if (this.files && this.files[0]) {
-      const reader = new FileReader();
-      reader.onload = e => {
-        previewImg.src = e.target.result;
-        previewWrap.style.display = '';
-        label.textContent = '📸 ✓';
-      };
-      reader.readAsDataURL(this.files[0]);
-    }
+  function showPreview(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src = e.target.result;
+      previewWrap.style.display = '';
+      toggleBtn.textContent = '📸 ✓';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Toggle menu open/closed
+  toggleBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = menu.style.display !== 'none';
+    menu.style.display = open ? 'none' : '';
   });
 
-  clearBtn.addEventListener('click', function() {
-    // Swap input for a fresh one to clear the selection (cross-browser safe)
-    const newInput = fileInput.cloneNode();
-    fileInput.replaceWith(newInput);
-    newInput.addEventListener('change', fileInput.onchange);
-    newInput.addEventListener('change', function() {
-      if (this.files && this.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => { previewImg.src = e.target.result; previewWrap.style.display = ''; label.textContent = '📸 ✓'; };
-        reader.readAsDataURL(this.files[0]);
+  // Close menu when clicking elsewhere
+  document.addEventListener('click', () => { menu.style.display = 'none'; });
+  menu.addEventListener('click', e => e.stopPropagation());
+
+  // Option buttons: set capture attr then trigger input
+  menu.querySelectorAll('.photo-picker-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.capture) {
+        fileInput.setAttribute('capture', btn.dataset.capture);
+      } else {
+        fileInput.removeAttribute('capture');
       }
+      menu.style.display = 'none';
+      fileInput.click();
+    });
+  });
+
+  // Show preview on file selected
+  fileInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) showPreview(this.files[0]);
+  });
+
+  // Clear button — swap input to reset it cross-browser
+  clearBtn.addEventListener('click', () => {
+    const fresh = fileInput.cloneNode();
+    fileInput.replaceWith(fresh);
+    fresh.addEventListener('change', function() {
+      if (this.files && this.files[0]) showPreview(this.files[0]);
     });
     previewWrap.style.display = 'none';
-    label.textContent = '📸';
+    toggleBtn.textContent = '📸';
   });
 })();
 
