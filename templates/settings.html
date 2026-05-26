@@ -57,26 +57,48 @@
         <p class="text-muted small">No users yet.</p>
         {% endif %}
         {% for user in users %}
-        <div class="d-flex align-items-center gap-3 py-2 border-bottom">
-          <div class="avatar-chip" style="background:{{ user.color }}">
-            {{ user.name[0].upper() }}
-          </div>
-          <div class="flex-grow-1">
-            <div class="fw-semibold">{{ user.name }}
-              {% if user.is_admin %}<span class="badge bg-primary ms-1" style="font-size:.65rem;">admin</span>{% endif %}
+        <div class="py-2 border-bottom">
+          <div class="d-flex align-items-center gap-3 mb-1">
+            <div class="avatar-chip" style="background:{{ user.color }}">
+              {{ user.name[0].upper() }}
             </div>
-            <div class="text-muted small">@{{ user.username }}</div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">{{ user.name }}
+                {% if user.is_admin %}<span class="badge bg-primary ms-1" style="font-size:.65rem;">admin</span>{% endif %}
+              </div>
+              <div class="text-muted small">@{{ user.username }}</div>
+            </div>
+            {% if user.id != session.user_id %}
+            <form method="post" action="{{ url_for('delete_user', user_id=user.id) }}"
+                  onsubmit="return confirm('Remove {{ user.name }}?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">Remove</button>
+            </form>
+            {% else %}
+            <span class="text-muted small">(you)</span>
+            {% endif %}
           </div>
-          {% if user.id != session.user_id %}
-          <form method="post" action="{{ url_for('delete_user', user_id=user.id) }}"
-                onsubmit="return confirm('Remove {{ user.name }}?')">
-            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">Remove</button>
+          <form method="post" action="{{ url_for('update_email', user_id=user.id) }}"
+                class="d-flex gap-2 ms-5 ps-1">
+            <input name="email" type="email" class="form-control form-control-sm"
+                   value="{{ user.email or '' }}" placeholder="email for digest…"
+                   style="max-width:230px;">
+            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2">Save</button>
           </form>
-          {% else %}
-          <span class="text-muted small">(you)</span>
-          {% endif %}
         </div>
         {% endfor %}
+      </div>
+    </div>
+
+    {# Send digest button #}
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fw-semibold">📧 Weekly Digest</div>
+          <div class="text-muted small">Sends automatically every Sunday at 9am UTC. Or send now to test.</div>
+        </div>
+        <form method="post" action="{{ url_for('send_digest') }}">
+          <button type="submit" class="btn btn-sm btn-outline-primary">Send Now</button>
+        </form>
       </div>
     </div>
   </div>

@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from werkzeug.utils import secure_filename
 import db
 import badges as badge_engine
+import mailer
 from auth import hash_password, verify_password, login_required, admin_required
 
 app = Flask(__name__)
@@ -388,6 +389,26 @@ def delete_user(user_id):
     else:
         db.delete_user(user_id)
         flash("User removed.", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/update-email/<int:user_id>", methods=["POST"])
+@admin_required
+def update_email(user_id):
+    email = request.form.get("email", "").strip().lower()
+    db.update_user_email(user_id, email or None)
+    flash("Email updated.", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/admin/send-digest", methods=["POST"])
+@admin_required
+def send_digest():
+    ok = mailer.send_digest()
+    if ok:
+        flash("Weekly digest sent! ✉️", "success")
+    else:
+        flash("Digest failed — check SMTP config or email addresses in Settings.", "danger")
     return redirect(url_for("settings"))
 
 

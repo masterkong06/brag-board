@@ -89,6 +89,11 @@ def init_db():
             conn.execute("ALTER TABLE brags ADD COLUMN photo_filename TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        # Migration: add email to users
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        except sqlite3.OperationalError:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +139,14 @@ def update_user_name(user_id, new_name):
         conn.execute(
             "UPDATE users SET name = ? WHERE id = ?",
             (new_name, user_id),
+        )
+
+
+def update_user_email(user_id, email):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE users SET email = ? WHERE id = ?",
+            (email or None, user_id),
         )
 
 
@@ -614,3 +627,49 @@ def get_all_user_badges():
     for r in rows:
         result.setdefault(r["user_id"], []).append(r["badge_slug"])
     return result
+
+
+# ---------------------------------------------------------------------------
+# Weekly digest
+# ---------------------------------------------------------------------------
+
+def get_weekly_digest_data():
+    """Collect all data needed to render the weekly email digest."""
+    with _conn() as conn:
+        week_brags = conn.execute("""
+            SELECT b.id, b.content, b.category, b.created_at,
+                   u.name AS user_name, u.id AS user_id
+            FROM brags b JOIN users u ON b.user_id = u.id
+            WHERE b.created_at >= datetime('now', '-7 days')
+            ORDER BY b.created_at DESC
+        """).fetchall()
+
+        granted = conn.execute("""
+            SELECT w.content, u.name AS claimer_name
+            FROM wishes w
+            JOIN brags b ON w.fulfilled_by_brag_id = b.id
+            JOIN users u ON b.user_id = u.id
+            WHERE b.created_at >= datetime('now', '-7 days')
+        """).fetchall()
+
+    leaderboard = get_all_balances()
+
+    users = get_all_users()
+    streaks = []
+    for u in users:
+        s = get_user_streak(u["id"])
+        if s >= 1:
+            streaks.append({"name": u["name"], "streak": s})
+    streaks.sort(key=lambda x: x["streak"], reverse=True)
+
+    week_brags_list = [dict(b) for b in week_brags]
+    contributor_ids = {b["user_id"] for b in week_brags_list}
+
+    return {
+        "brag_count":       len(week_brags_list),
+        "contributor_count": len(contributor_ids),
+        "top_brags":        week_brags_list[:6],
+        "leaderboard":      leaderboard,
+        "streaks":          streaks,
+        "granted":          [dict(g) for g in granted],
+    }
