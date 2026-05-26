@@ -241,8 +241,7 @@
   // Toggle menu open/closed
   toggleBtn.addEventListener('click', e => {
     e.stopPropagation();
-    const open = menu.style.display !== 'none';
-    menu.style.display = open ? 'none' : '';
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   });
 
   // Close menu when clicking elsewhere
