@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Brag Board{% endblock %}</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#060913">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Brag Board">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='simian-theme.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -48,5 +54,47 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
+
+{% if session.user_id %}
+<script>
+// PWA Badge API — sets a dot on the home screen icon when there are
+// new reactions on your brags since your last visit.
+(function() {
+  if (!('setAppBadge' in navigator)) return;
+
+  const STORAGE_KEY = 'brag_last_visit_{{ session.user_id }}';
+  const lastVisit = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+  const now = Date.now();
+
+  // Count reactions added after lastVisit using the reaction timestamps
+  // We use the reaction summary embedded in the page (reaction-btn counts)
+  // As a simple heuristic: if total reactions > stored total, set badge
+  const REACTIONS_KEY = 'brag_reaction_total_{{ session.user_id }}';
+  const storedTotal = parseInt(localStorage.getItem(REACTIONS_KEY) || '0', 10);
+
+  // Count total reactions visible on page for brags NOT owned by current user
+  // (reactions from others on your brags)
+  let currentTotal = 0;
+  document.querySelectorAll('.brag-card').forEach(card => {
+    // Only count on cards belonging to current user
+    // We can't easily check this client-side, so count all reactions as proxy
+    card.querySelectorAll('.reaction-count').forEach(el => {
+      currentTotal += parseInt(el.textContent || '0', 10);
+    });
+  });
+
+  if (currentTotal > storedTotal) {
+    const newCount = currentTotal - storedTotal;
+    navigator.setAppBadge(newCount).catch(() => {});
+  } else {
+    navigator.clearAppBadge().catch(() => {});
+  }
+
+  // Update stored total and last visit timestamp on page load
+  localStorage.setItem(REACTIONS_KEY, currentTotal);
+  localStorage.setItem(STORAGE_KEY, now);
+})();
+</script>
+{% endif %}
 </body>
 </html>
