@@ -219,15 +219,55 @@
 
 {% block scripts %}
 <script>
-// Photo picker — camera vs gallery chooser
+// Photo picker — camera vs gallery chooser + client-side compression
 (function() {
-  const fileInput   = document.getElementById('photo-input');
+  let activeInput   = document.getElementById('photo-input');
   const toggleBtn   = document.getElementById('photo-toggle');
   const menu        = document.getElementById('photo-menu');
   const previewWrap = document.querySelector('.photo-preview-wrap');
   const previewImg  = document.querySelector('.photo-preview-img');
   const clearBtn    = document.querySelector('.photo-clear-btn');
+  const bragForm    = document.querySelector('form[action*="brag"]');
 
+  // --- Canvas compression ---
+  function compressImage(file, maxDim, quality) {
+    return new Promise(resolve => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else        { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(resolve, 'image/jpeg', quality);
+      };
+      img.src = url;
+    });
+  }
+
+  // --- Intercept form submit to compress before sending ---
+  bragForm.addEventListener('submit', async function(e) {
+    if (!activeInput.files || !activeInput.files[0]) return; // no photo — submit normally
+    e.preventDefault();
+    toggleBtn.textContent = '⏳';
+    try {
+      const blob = await compressImage(activeInput.files[0], 1200, 0.82);
+      const fd = new FormData(bragForm);
+      fd.delete('photo');
+      fd.append('photo', blob, 'photo.jpg');
+      await fetch(bragForm.action, { method: 'POST', body: fd });
+    } catch(err) {
+      console.error('Photo compress/upload failed:', err);
+    }
+    window.location.href = '/';
+  });
+
+  // --- Preview helper ---
   function showPreview(file) {
     const reader = new FileReader();
     reader.onload = e => {
@@ -238,41 +278,36 @@
     reader.readAsDataURL(file);
   }
 
-  // Toggle menu open/closed
+  function bindInput(input) {
+    input.addEventListener('change', function() {
+      if (this.files && this.files[0]) showPreview(this.files[0]);
+    });
+  }
+  bindInput(activeInput);
+
+  // --- Menu toggle ---
   toggleBtn.addEventListener('click', e => {
     e.stopPropagation();
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   });
-
-  // Close menu when clicking elsewhere
   document.addEventListener('click', () => { menu.style.display = 'none'; });
   menu.addEventListener('click', e => e.stopPropagation());
 
-  // Option buttons: set capture attr then trigger input
   menu.querySelectorAll('.photo-picker-option').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.capture) {
-        fileInput.setAttribute('capture', btn.dataset.capture);
-      } else {
-        fileInput.removeAttribute('capture');
-      }
+      if (btn.dataset.capture) activeInput.setAttribute('capture', btn.dataset.capture);
+      else activeInput.removeAttribute('capture');
       menu.style.display = 'none';
-      fileInput.click();
+      activeInput.click();
     });
   });
 
-  // Show preview on file selected
-  fileInput.addEventListener('change', function() {
-    if (this.files && this.files[0]) showPreview(this.files[0]);
-  });
-
-  // Clear button — swap input to reset it cross-browser
+  // --- Clear ---
   clearBtn.addEventListener('click', () => {
-    const fresh = fileInput.cloneNode();
-    fileInput.replaceWith(fresh);
-    fresh.addEventListener('change', function() {
-      if (this.files && this.files[0]) showPreview(this.files[0]);
-    });
+    const fresh = activeInput.cloneNode();
+    activeInput.replaceWith(fresh);
+    activeInput = fresh;
+    bindInput(activeInput);
     previewWrap.style.display = 'none';
     toggleBtn.textContent = '📸';
   });
