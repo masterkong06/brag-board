@@ -1,6 +1,8 @@
 import os
+import uuid
 import secrets
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from werkzeug.utils import secure_filename
 import db
 import badges as badge_engine
 from auth import hash_password, verify_password, login_required, admin_required
@@ -10,6 +12,11 @@ _secret = os.getenv("SECRET_KEY")
 if not _secret:
     raise RuntimeError("SECRET_KEY environment variable must be set")
 app.secret_key = _secret
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB upload limit
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 
 CATEGORIES = [
     ("kitchen",  "🍽️",  "Kitchen"),
@@ -22,6 +29,32 @@ CATEGORIES = [
 EMOJIS = ["❤️", "🙌", "🔥"]
 AVATAR_COLORS = ["#4361ee","#f72585","#7209b7","#3a0ca3","#4cc9f0",
                  "#f4a261","#2a9d8f","#e76f51","#264653","#e9c46a"]
+
+
+def _allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _save_upload(file_obj):
+    """Save an uploaded FileStorage object; return filename or None."""
+    if not file_obj or not file_obj.filename:
+        return None
+    if not _allowed_file(file_obj.filename):
+        return None
+    ext = secure_filename(file_obj.filename).rsplit(".", 1)[-1].lower()
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    file_obj.save(os.path.join(UPLOAD_FOLDER, filename))
+    return filename
+
+
+def _delete_upload(filename):
+    """Remove an uploaded file from disk if it exists."""
+    if filename:
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
 
 
 def _seed_admin():
@@ -112,7 +145,8 @@ def post_brag():
     content = request.form.get("content", "").strip()
     category = request.form.get("category", "other")
     if content:
-        db.post_brag(session["user_id"], content, category)
+        photo_filename = _save_upload(request.files.get("photo"))
+        db.post_brag(session["user_id"], content, category, photo_filename)
         newly = badge_engine.check_and_award(session["user_id"])
         for b in newly:
             flash(f"{b['emoji']} New badge unlocked: <strong>{b['name']}</strong> — {b['desc']}", "success")
@@ -124,7 +158,10 @@ def post_brag():
 def delete_brag(brag_id):
     # Users can only delete their own brags; admins can delete any
     if session.get("is_admin") or _brag_owner(brag_id) == session["user_id"]:
+        brag = db.get_brag_by_id(brag_id)
         db.delete_brag(brag_id)
+        if brag:
+            _delete_upload(brag["photo_filename"])
     return redirect(url_for("index"))
 
 

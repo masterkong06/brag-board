@@ -127,6 +127,28 @@
 }
 
 /* ==========================================================================
+   Photo attachments
+   ========================================================================== */
+.photo-file-input {
+  display: none;   /* hidden — triggered by the label */
+}
+.photo-upload-label {
+  cursor: pointer;
+  user-select: none;
+}
+.brag-photo {
+  max-height: 320px;
+  max-width: 100%;
+  width: auto;
+  object-fit: cover;
+  display: block;
+  transition: opacity .2s;
+}
+.brag-photo:hover {
+  opacity: .88;
+}
+
+/* ==========================================================================
    Color swatches (settings)
    ========================================================================== */
 .color-swatch-label input[type=radio] { display: none; }

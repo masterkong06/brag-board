@@ -8,3 +8,4 @@ brag_board.db
 .env
 *.TEMP.txt
 .deploy_keys_TEMP.txt
+static/uploads/

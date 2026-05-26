@@ -84,6 +84,11 @@ def _conn():
 def init_db():
     with _conn() as conn:
         conn.executescript(SCHEMA)
+        # Migration: add photo_filename to brags (safe to run repeatedly)
+        try:
+            conn.execute("ALTER TABLE brags ADD COLUMN photo_filename TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 # ---------------------------------------------------------------------------
@@ -151,13 +156,20 @@ def get_brags():
         """).fetchall()
 
 
-def post_brag(user_id, content, category="other"):
+def post_brag(user_id, content, category="other", photo_filename=None):
     with _conn() as conn:
         cur = conn.execute(
-            "INSERT INTO brags (user_id, content, category) VALUES (?, ?, ?)",
-            (user_id, content, category),
+            "INSERT INTO brags (user_id, content, category, photo_filename) VALUES (?, ?, ?, ?)",
+            (user_id, content, category, photo_filename),
         )
         return cur.lastrowid
+
+
+def get_brag_by_id(brag_id):
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM brags WHERE id = ?", (brag_id,)
+        ).fetchone()
 
 
 def delete_brag(brag_id):

@@ -24,7 +24,7 @@
     {# Post-a-brag form #}
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body p-3">
-        <form method="post" action="{{ url_for('post_brag') }}">
+        <form method="post" action="{{ url_for('post_brag') }}" enctype="multipart/form-data">
           <div class="d-flex gap-2 align-items-start">
             <div class="avatar-chip flex-shrink-0 mt-1" style="background:{{ session.user_color }}">
               {{ session.user_name[0].upper() }}
@@ -39,9 +39,17 @@
                   <option value="{{ key }}">{{ ico }} {{ label }}</option>
                   {% endfor %}
                 </select>
+                <label class="photo-upload-label btn btn-sm btn-outline-secondary" for="photo-input" title="Attach a photo">
+                  📸
+                </label>
+                <input type="file" name="photo" id="photo-input" accept="image/*" class="photo-file-input" capture="environment">
                 <button type="submit" class="btn btn-primary btn-sm ms-auto px-3 fw-semibold">
                   🏆 Post Brag
                 </button>
+              </div>
+              <div class="photo-preview-wrap mt-2" style="display:none">
+                <img class="photo-preview-img rounded-2" style="max-height:120px;max-width:100%;object-fit:cover;">
+                <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 photo-clear-btn" style="font-size:.75rem">✕ remove</button>
               </div>
             </div>
           </div>
@@ -79,6 +87,17 @@
               <span class="text-muted small ms-auto">{{ brag.created_at[:16].replace('T',' ') }}</span>
             </div>
             <p class="mb-2 mt-1">{{ brag.content }}</p>
+
+            {# Photo attachment #}
+            {% if brag.photo_filename %}
+            <a href="{{ url_for('static', filename='uploads/' + brag.photo_filename) }}"
+               target="_blank" rel="noopener" class="d-block mb-2">
+              <img src="{{ url_for('static', filename='uploads/' + brag.photo_filename) }}"
+                   class="brag-photo rounded-2"
+                   alt="brag photo"
+                   loading="lazy">
+            </a>
+            {% endif %}
 
             {# Reactions row #}
             <div class="d-flex align-items-center gap-1 flex-wrap">
@@ -195,6 +214,43 @@
 
 {% block scripts %}
 <script>
+// Photo upload preview
+(function() {
+  const fileInput  = document.getElementById('photo-input');
+  const previewWrap= document.querySelector('.photo-preview-wrap');
+  const previewImg = document.querySelector('.photo-preview-img');
+  const clearBtn   = document.querySelector('.photo-clear-btn');
+  const label      = document.querySelector('.photo-upload-label');
+
+  fileInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewImg.src = e.target.result;
+        previewWrap.style.display = '';
+        label.textContent = '📸 ✓';
+      };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+
+  clearBtn.addEventListener('click', function() {
+    // Swap input for a fresh one to clear the selection (cross-browser safe)
+    const newInput = fileInput.cloneNode();
+    fileInput.replaceWith(newInput);
+    newInput.addEventListener('change', fileInput.onchange);
+    newInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => { previewImg.src = e.target.result; previewWrap.style.display = ''; label.textContent = '📸 ✓'; };
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+    previewWrap.style.display = 'none';
+    label.textContent = '📸';
+  });
+})();
+
 document.querySelectorAll('.reaction-btn').forEach(btn => {
   btn.addEventListener('click', async function() {
     const bragId = this.dataset.brag;
