@@ -153,6 +153,29 @@ Mark each test **PASS ✅** or **FAIL ❌**. If it fails, jot a quick note on wh
 
 ---
 
+## Test 12 — Add to Home Screen & Badge Dot Notification
+
+*Tests the PWA home screen shortcut and notification badge.*
+
+> **Android (Chrome):** Tap the ⋮ menu → "Add to Home screen"  
+> **iPhone (Safari):** Tap the Share button → "Add to Home Screen"
+
+| Step | Action | Expected Result | Result |
+|------|--------|-----------------|--------|
+| 1 | Open https://brag.woodsandbryant.com in your phone's browser | Site loads normally | |
+| 2 | Add the site to your home screen using your browser's menu | A "Brag Board" icon appears on your home screen | |
+| 3 | Tap the home screen icon | App opens full-screen with no browser address bar | |
+| 4 | Ask another family member to react (❤️/🙌/🔥) to one of your brags | They add a reaction | |
+| 5 | Leave the app (go to home screen) | — | |
+| 6 | Re-open the app from the home screen icon | A numbered dot/badge appears on the icon before you open it | |
+| 7 | Once the app loads, go back to the home screen | Badge dot is cleared | |
+
+> **Note:** Badge dots require Android Chrome or iOS Safari 16.4+. If your phone is older the badge may not appear, but the app should still install correctly.
+
+**Notes:** _______________
+
+---
+
 ## Admin-Only Tests
 *Skip these if you are not the admin.*
 
@@ -189,8 +212,9 @@ Mark each test **PASS ✅** or **FAIL ❌**. If it fails, jot a quick note on wh
 | 9 | Profile & badges | |
 | 10 | Rewards page | |
 | 11 | Sign out & back in | |
-| 12 | Admin: update email | |
-| 13 | Admin: send digest | |
+| 12 | Home screen shortcut & badge dot | |
+| 13 | Admin: update email | |
+| 14 | Admin: send digest | |
 
 **Overall result:** _______________  
 **Issues found:** _______________
