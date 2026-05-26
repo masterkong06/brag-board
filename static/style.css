@@ -130,11 +130,44 @@
    Photo attachments
    ========================================================================== */
 .photo-file-input {
-  display: none;   /* hidden — triggered by the label */
+  display: none;   /* triggered programmatically */
 }
-.photo-upload-label {
+
+/* picker wrapper + dropdown menu */
+.photo-picker-wrap {
+  position: relative;
+}
+.photo-picker-menu {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 175px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  overflow: hidden;
+  z-index: 200;
+}
+.photo-picker-option {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  text-align: left;
+  font-size: .85rem;
   cursor: pointer;
-  user-select: none;
+  transition: background .15s;
+}
+.photo-picker-option + .photo-picker-option {
+  border-top: 1px solid var(--border-subtle);
+}
+.photo-picker-option:hover {
+  background: rgba(255,255,255,0.08);
 }
 .brag-photo {
   max-height: 320px;
