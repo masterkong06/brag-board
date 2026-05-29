@@ -187,6 +187,8 @@ def get_brag_by_id(brag_id):
 
 def delete_brag(brag_id):
     with _conn() as conn:
+        conn.execute("DELETE FROM reactions WHERE brag_id = ?", (brag_id,))
+        conn.execute("UPDATE wishes SET fulfilled_by_brag_id = NULL WHERE fulfilled_by_brag_id = ?", (brag_id,))
         conn.execute("DELETE FROM brags WHERE id = ?", (brag_id,))
 
 
