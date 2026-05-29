@@ -157,21 +157,12 @@ def post_brag():
 @app.route("/brag/<int:brag_id>/delete", methods=["POST"])
 @login_required
 def delete_brag(brag_id):
-    # Users can only delete their own brags; admins can delete any
-    if session.get("is_admin") or _brag_owner(brag_id) == session["user_id"]:
-        brag = db.get_brag_by_id(brag_id)
+    brag = db.get_brag_by_id(brag_id)
+    if brag and brag["user_id"] == session["user_id"]:
         db.delete_brag(brag_id)
-        if brag:
-            _delete_upload(brag["photo_filename"])
+        _delete_upload(brag["photo_filename"])
     return redirect(url_for("index"))
 
-
-def _brag_owner(brag_id):
-    brags = db.get_brags()
-    for b in brags:
-        if b["id"] == brag_id:
-            return b["user_id"]
-    return None
 
 
 # ---------------------------------------------------------------------------

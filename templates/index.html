@@ -119,8 +119,8 @@
               </button>
               {% endfor %}
 
-              {# Delete (own brag or admin) #}
-              {% if brag.user_id == current_user_id or session.is_admin %}
+              {# Delete (own brag only) #}
+              {% if brag.user_id == current_user_id %}
               <form method="post" action="{{ url_for('delete_brag', brag_id=brag.id) }}"
                     class="ms-auto" onsubmit="return confirm('Delete this brag?')">
                 <button type="submit" class="btn btn-link btn-sm text-muted p-0" style="font-size:.75rem">✕</button>
