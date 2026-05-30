@@ -11,7 +11,10 @@ from auth import hash_password, verify_password, login_required, admin_required
 app = Flask(__name__)
 _secret = os.getenv("SECRET_KEY")
 if not _secret:
-    raise RuntimeError("SECRET_KEY environment variable must be set")
+    import sys
+    _secret = secrets.token_hex(32)
+    print("\n  WARNING: SECRET_KEY not set -- using a random key.", file=sys.stderr)
+    print("  Sessions will not survive restarts. Set SECRET_KEY for production.\n", file=sys.stderr)
 app.secret_key = _secret
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB upload limit
 
@@ -412,4 +415,4 @@ db.seed_category_points()
 _seed_admin()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5002, debug=False)
+    app.run(host="0.0.0.0", port=5002, debug=True)
