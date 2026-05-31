@@ -71,6 +71,61 @@ CREATE TABLE IF NOT EXISTS redemptions (
     resolved_at TEXT,
     resolved_by INTEGER REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS learn_categories (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT NOT NULL,
+    emoji         TEXT NOT NULL DEFAULT '📚',
+    display_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS learn_tasks (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    title               TEXT NOT NULL,
+    description         TEXT DEFAULT '',
+    category_id         INTEGER NOT NULL REFERENCES learn_categories(id),
+    youtube_video_id    TEXT,
+    bonus_points_first  INTEGER NOT NULL DEFAULT 50,
+    bonus_points_repeat INTEGER NOT NULL DEFAULT 10,
+    watch_threshold_pct INTEGER NOT NULL DEFAULT 80,
+    is_active           INTEGER NOT NULL DEFAULT 1,
+    created_at          TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS learn_quiz_questions (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id        INTEGER NOT NULL REFERENCES learn_tasks(id),
+    question       TEXT NOT NULL,
+    choice_a       TEXT NOT NULL,
+    choice_b       TEXT NOT NULL,
+    choice_c       TEXT NOT NULL,
+    choice_d       TEXT NOT NULL,
+    correct_choice TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS learn_watch_sessions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    task_id     INTEGER NOT NULL REFERENCES learn_tasks(id),
+    pct_watched INTEGER NOT NULL DEFAULT 0,
+    updated_at  TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, task_id)
+);
+
+CREATE TABLE IF NOT EXISTS learn_completions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      INTEGER NOT NULL REFERENCES users(id),
+    task_id      INTEGER NOT NULL REFERENCES learn_tasks(id),
+    quiz_score   INTEGER,
+    bonus_awarded INTEGER NOT NULL DEFAULT 0,
+    brag_id      INTEGER REFERENCES brags(id),
+    completed_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS learn_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
@@ -94,6 +149,39 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
         except sqlite3.OperationalError:
             pass
+        # Migrations: Learn Hub tables (safe to run repeatedly via CREATE IF NOT EXISTS)
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS learn_categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
+                emoji TEXT NOT NULL DEFAULT '📚', display_order INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS learn_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
+                description TEXT DEFAULT '', category_id INTEGER NOT NULL,
+                youtube_video_id TEXT, bonus_points_first INTEGER NOT NULL DEFAULT 50,
+                bonus_points_repeat INTEGER NOT NULL DEFAULT 10,
+                watch_threshold_pct INTEGER NOT NULL DEFAULT 80,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS learn_quiz_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER NOT NULL,
+                question TEXT NOT NULL, choice_a TEXT NOT NULL, choice_b TEXT NOT NULL,
+                choice_c TEXT NOT NULL, choice_d TEXT NOT NULL, correct_choice TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS learn_watch_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+                task_id INTEGER NOT NULL, pct_watched INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT DEFAULT (datetime('now')), UNIQUE(user_id, task_id)
+            );
+            CREATE TABLE IF NOT EXISTS learn_completions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+                task_id INTEGER NOT NULL, quiz_score INTEGER,
+                bonus_awarded INTEGER NOT NULL DEFAULT 0, brag_id INTEGER,
+                completed_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS learn_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        """)
 
 
 # ---------------------------------------------------------------------------
@@ -628,6 +716,207 @@ def get_all_user_badges():
     result = {}
     for r in rows:
         result.setdefault(r["user_id"], []).append(r["badge_slug"])
+    return result
+
+
+
+# ---------------------------------------------------------------------------
+# Learn Hub
+# ---------------------------------------------------------------------------
+
+DEFAULT_LEARN_SETTINGS = {
+    "watch_threshold_pct":    "80",
+    "bonus_first_watch":      "50",
+    "bonus_repeat_watch":     "10",
+    "quiz_pass_threshold":    "2",
+    "quiz_pass_multiplier":   "100",
+    "quiz_partial_multiplier":"40",
+    "quiz_fail_multiplier":   "15",
+}
+
+
+def learn_seed_settings():
+    with _conn() as conn:
+        for k, v in DEFAULT_LEARN_SETTINGS.items():
+            conn.execute("INSERT OR IGNORE INTO learn_settings (key,value) VALUES (?,?)", (k, v))
+
+
+def learn_get_settings():
+    with _conn() as conn:
+        rows = conn.execute("SELECT key, value FROM learn_settings").fetchall()
+    return {r["key"]: r["value"] for r in rows}
+
+
+def learn_set_setting(key, value):
+    with _conn() as conn:
+        conn.execute("INSERT INTO learn_settings (key,value) VALUES (?,?) "
+                     "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, str(value)))
+
+
+def learn_get_categories():
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM learn_categories ORDER BY display_order, name"
+        ).fetchall()
+
+
+def learn_create_category(name, emoji, display_order=0):
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO learn_categories (name, emoji, display_order) VALUES (?,?,?)",
+            (name, emoji, display_order),
+        )
+        return cur.lastrowid
+
+
+def learn_update_category(cat_id, name, emoji, display_order):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE learn_categories SET name=?, emoji=?, display_order=? WHERE id=?",
+            (name, emoji, display_order, cat_id),
+        )
+
+
+def learn_delete_category(cat_id):
+    with _conn() as conn:
+        conn.execute("DELETE FROM learn_categories WHERE id=?", (cat_id,))
+
+
+def learn_get_tasks(category_id=None):
+    with _conn() as conn:
+        if category_id:
+            return conn.execute(
+                "SELECT t.*, c.name AS cat_name, c.emoji AS cat_emoji "
+                "FROM learn_tasks t JOIN learn_categories c ON t.category_id=c.id "
+                "WHERE t.category_id=? AND t.is_active=1 ORDER BY t.title",
+                (category_id,),
+            ).fetchall()
+        return conn.execute(
+            "SELECT t.*, c.name AS cat_name, c.emoji AS cat_emoji "
+            "FROM learn_tasks t JOIN learn_categories c ON t.category_id=c.id "
+            "WHERE t.is_active=1 ORDER BY c.display_order, t.title"
+        ).fetchall()
+
+
+def learn_get_all_tasks():
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT t.*, c.name AS cat_name, c.emoji AS cat_emoji "
+            "FROM learn_tasks t JOIN learn_categories c ON t.category_id=c.id "
+            "ORDER BY c.display_order, t.title"
+        ).fetchall()
+
+
+def learn_get_task(task_id):
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT t.*, c.name AS cat_name, c.emoji AS cat_emoji "
+            "FROM learn_tasks t JOIN learn_categories c ON t.category_id=c.id "
+            "WHERE t.id=?", (task_id,)
+        ).fetchone()
+
+
+def learn_create_task(title, description, category_id, youtube_video_id,
+                      bonus_first, bonus_repeat, threshold):
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO learn_tasks (title, description, category_id, youtube_video_id, "
+            "bonus_points_first, bonus_points_repeat, watch_threshold_pct) VALUES (?,?,?,?,?,?,?)",
+            (title, description, category_id, youtube_video_id or None,
+             bonus_first, bonus_repeat, threshold),
+        )
+        return cur.lastrowid
+
+
+def learn_update_task(task_id, title, description, category_id, youtube_video_id,
+                      bonus_first, bonus_repeat, threshold, is_active):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE learn_tasks SET title=?, description=?, category_id=?, "
+            "youtube_video_id=?, bonus_points_first=?, bonus_points_repeat=?, "
+            "watch_threshold_pct=?, is_active=? WHERE id=?",
+            (title, description, category_id, youtube_video_id or None,
+             bonus_first, bonus_repeat, threshold, is_active, task_id),
+        )
+
+
+def learn_delete_task(task_id):
+    with _conn() as conn:
+        conn.execute("DELETE FROM learn_quiz_questions WHERE task_id=?", (task_id,))
+        conn.execute("DELETE FROM learn_watch_sessions WHERE task_id=?", (task_id,))
+        conn.execute("DELETE FROM learn_completions WHERE task_id=?", (task_id,))
+        conn.execute("DELETE FROM learn_tasks WHERE id=?", (task_id,))
+
+
+def learn_get_quiz_questions(task_id):
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM learn_quiz_questions WHERE task_id=? ORDER BY id",
+            (task_id,),
+        ).fetchall()
+
+
+def learn_add_question(task_id, question, a, b, c, d, correct):
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO learn_quiz_questions (task_id,question,choice_a,choice_b,choice_c,choice_d,correct_choice)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (task_id, question, a, b, c, d, correct),
+        )
+        return cur.lastrowid
+
+
+def learn_delete_question(question_id):
+    with _conn() as conn:
+        conn.execute("DELETE FROM learn_quiz_questions WHERE id=?", (question_id,))
+
+
+def learn_get_watch_session(user_id, task_id):
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM learn_watch_sessions WHERE user_id=? AND task_id=?",
+            (user_id, task_id),
+        ).fetchone()
+
+
+def learn_upsert_watch(user_id, task_id, pct):
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO learn_watch_sessions (user_id, task_id, pct_watched, updated_at) VALUES (?,?,?,datetime('now')) "
+            "ON CONFLICT(user_id, task_id) DO UPDATE SET "
+            "pct_watched=MAX(pct_watched, excluded.pct_watched), updated_at=datetime('now')",
+            (user_id, task_id, pct),
+        )
+
+
+def learn_is_first_completion(user_id, task_id):
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM learn_completions WHERE user_id=? AND task_id=?",
+            (user_id, task_id),
+        ).fetchone()
+    return row["cnt"] == 0
+
+
+def learn_record_completion(user_id, task_id, quiz_score, bonus_awarded, brag_id):
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO learn_completions (user_id,task_id,quiz_score,bonus_awarded,brag_id) "
+            "VALUES (?,?,?,?,?)",
+            (user_id, task_id, quiz_score, bonus_awarded, brag_id),
+        )
+
+
+def learn_get_user_completions(user_id):
+    """Returns {task_id: [completion_rows]} for a user."""
+    with _conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM learn_completions WHERE user_id=? ORDER BY completed_at DESC",
+            (user_id,),
+        ).fetchall()
+    result = {}
+    for r in rows:
+        result.setdefault(r["task_id"], []).append(dict(r))
     return result
 
 

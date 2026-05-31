@@ -23,6 +23,7 @@
       🏆 Brag Board
     </a>
     <div class="d-flex align-items-center gap-3">
+      <a href="{{ url_for('learn') }}" class="text-white-50 small text-decoration-none">📚 Learn</a>
       <a href="{{ url_for('rewards') }}" class="text-white-50 small text-decoration-none">🏆 Rewards</a>
       {% if session.is_admin %}
       <a href="{{ url_for('settings') }}" class="text-white-50 small text-decoration-none">⚙️ Settings</a>
