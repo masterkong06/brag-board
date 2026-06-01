@@ -406,12 +406,286 @@ def send_digest():
     return redirect(url_for("settings"))
 
 
+import re
+
+def _extract_youtube_id(url):
+    """Extract video ID from various YouTube URL formats."""
+    if not url:
+        return None
+    url = url.strip()
+    patterns = [
+        r'(?:v=|/embed/|youtu\.be/)([A-Za-z0-9_-]{11})',
+    ]
+    for p in patterns:
+        m = re.search(p, url)
+        if m:
+            return m.group(1)
+    # bare ID?
+    if re.match(r'^[A-Za-z0-9_-]{11}$', url):
+        return url
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Learn Hub
+# ---------------------------------------------------------------------------
+
+@app.route("/learn")
+@login_required
+def learn():
+    categories = db.learn_get_categories()
+    cat_id = request.args.get("cat", type=int)
+    if cat_id:
+        tasks = db.learn_get_tasks(category_id=cat_id)
+    else:
+        tasks = db.learn_get_tasks()
+    completions = db.learn_get_user_completions(session["user_id"])
+    return render_template(
+        "learn.html",
+        categories=categories,
+        tasks=tasks,
+        completions=completions,
+        active_cat=cat_id,
+    )
+
+
+@app.route("/learn/<int:task_id>")
+@login_required
+def learn_task(task_id):
+    task = db.learn_get_task(task_id)
+    if not task:
+        return redirect(url_for("learn"))
+    questions = db.learn_get_quiz_questions(task_id)
+    watch = db.learn_get_watch_session(session["user_id"], task_id)
+    completions = db.learn_get_user_completions(session["user_id"])
+    settings = db.learn_get_settings()
+    threshold = task["watch_threshold_pct"]
+    watched_pct = watch["pct_watched"] if watch else 0
+    quiz_unlocked = watched_pct >= threshold
+    prior_completions = completions.get(task_id, [])
+    return render_template(
+        "learn_task.html",
+        task=task,
+        questions=questions,
+        settings=settings,
+        watched_pct=watched_pct,
+        quiz_unlocked=quiz_unlocked,
+        prior_completions=prior_completions,
+    )
+
+
+@app.route("/learn/<int:task_id>/watch", methods=["POST"])
+@login_required
+def learn_watch(task_id):
+    pct = request.json.get("pct", 0)
+    pct = max(0, min(100, int(pct)))
+    db.learn_upsert_watch(session["user_id"], task_id, pct)
+    task = db.learn_get_task(task_id)
+    threshold = task["watch_threshold_pct"] if task else 80
+    return jsonify({"ok": True, "unlocked": pct >= threshold})
+
+
+@app.route("/learn/<int:task_id>/complete", methods=["POST"])
+@login_required
+def learn_complete(task_id):
+    """Submit quiz answers (optional) and post a brag to earn bonus points."""
+    task = db.learn_get_task(task_id)
+    if not task:
+        return redirect(url_for("learn"))
+
+    settings = db.learn_get_settings()
+    questions = db.learn_get_quiz_questions(task_id)
+    brag_content = request.form.get("brag_content", "").strip()
+    if not brag_content:
+        flash("Please describe what you did before logging the brag.", "warning")
+        return redirect(url_for("learn_task", task_id=task_id))
+
+    # Score quiz if questions exist
+    quiz_score = None
+    if questions:
+        correct = 0
+        for q in questions:
+            answer = request.form.get(f"q{q['id']}", "")
+            if answer.lower() == q["correct_choice"].lower():
+                correct += 1
+        quiz_score = correct
+
+    # Determine bonus
+    is_first = db.learn_is_first_completion(session["user_id"], task_id)
+    if is_first and questions and quiz_score is not None:
+        pass_threshold = int(settings.get("quiz_pass_threshold", 2))
+        pass_mult  = int(settings.get("quiz_pass_multiplier", 100))
+        part_mult  = int(settings.get("quiz_partial_multiplier", 40))
+        fail_mult  = int(settings.get("quiz_fail_multiplier", 15))
+        base = task["bonus_points_first"]
+        if quiz_score >= pass_threshold:
+            mult = pass_mult
+        elif quiz_score == pass_threshold - 1:
+            mult = part_mult
+        else:
+            mult = fail_mult
+        bonus = round(base * mult / 100)
+    elif is_first:
+        bonus = task["bonus_points_first"]
+    else:
+        bonus = task["bonus_points_repeat"]
+
+    # Post the brag and award bonus via a special category
+    brag_id = db.post_brag(
+        session["user_id"],
+        brag_content,
+        category=task["cat_name"].lower().replace(" ", "_"),
+    )
+    # Award bonus by inserting a completion record (points summed from learn_completions)
+    db.learn_record_completion(session["user_id"], task_id, quiz_score, bonus, brag_id)
+
+    # Check badges
+    newly = badge_engine.check_and_award(session["user_id"])
+
+    if quiz_score is not None:
+        score_msg = f"{quiz_score}/{len(questions)} on the quiz"
+    else:
+        score_msg = "no quiz"
+
+    flash(
+        f"🎉 Brag logged! You earned <strong>+{bonus} bonus pts</strong> ({score_msg}).",
+        "success",
+    )
+    return redirect(url_for("index"))
+
+
+# ----- Admin: Learn categories -----
+
+@app.route("/learn/admin")
+@admin_required
+def learn_admin():
+    categories = db.learn_get_categories()
+    tasks = db.learn_get_all_tasks()
+    settings = db.learn_get_settings()
+    return render_template("learn_admin.html", categories=categories, tasks=tasks, settings=settings)
+
+
+@app.route("/learn/admin/category/new", methods=["POST"])
+@admin_required
+def learn_admin_new_category():
+    name  = request.form.get("name", "").strip()
+    emoji = request.form.get("emoji", "📚").strip() or "📚"
+    order = int(request.form.get("display_order", 0))
+    if name:
+        db.learn_create_category(name, emoji, order)
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/category/<int:cat_id>/edit", methods=["POST"])
+@admin_required
+def learn_admin_edit_category(cat_id):
+    db.learn_update_category(
+        cat_id,
+        request.form.get("name", "").strip(),
+        request.form.get("emoji", "📚").strip() or "📚",
+        int(request.form.get("display_order", 0)),
+    )
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/category/<int:cat_id>/delete", methods=["POST"])
+@admin_required
+def learn_admin_delete_category(cat_id):
+    db.learn_delete_category(cat_id)
+    return redirect(url_for("learn_admin"))
+
+
+# ----- Admin: Learn tasks -----
+
+@app.route("/learn/admin/task/new", methods=["POST"])
+@admin_required
+def learn_admin_new_task():
+    title    = request.form.get("title", "").strip()
+    desc     = request.form.get("description", "").strip()
+    cat_id   = int(request.form.get("category_id", 0))
+    yt_url   = request.form.get("youtube_url", "").strip()
+    yt_id    = _extract_youtube_id(yt_url)
+    b_first  = int(request.form.get("bonus_first", 50))
+    b_repeat = int(request.form.get("bonus_repeat", 10))
+    thresh   = int(request.form.get("threshold", 80))
+    if title and cat_id:
+        task_id = db.learn_create_task(title, desc, cat_id, yt_id, b_first, b_repeat, thresh)
+        # Add quiz questions if provided
+        for i in range(1, 4):
+            q = request.form.get(f"q{i}_question", "").strip()
+            a = request.form.get(f"q{i}_a", "").strip()
+            b_ = request.form.get(f"q{i}_b", "").strip()
+            c = request.form.get(f"q{i}_c", "").strip()
+            d = request.form.get(f"q{i}_d", "").strip()
+            correct = request.form.get(f"q{i}_correct", "").strip().lower()
+            if q and a and b_ and c and d and correct in ("a","b","c","d"):
+                db.learn_add_question(task_id, q, a, b_, c, d, correct)
+        flash(f"Task '{title}' created.", "success")
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/task/<int:task_id>/toggle", methods=["POST"])
+@admin_required
+def learn_admin_toggle_task(task_id):
+    task = db.learn_get_task(task_id)
+    if task:
+        db.learn_update_task(
+            task_id, task["title"], task["description"], task["category_id"],
+            task["youtube_video_id"], task["bonus_points_first"],
+            task["bonus_points_repeat"], task["watch_threshold_pct"],
+            1 - task["is_active"],
+        )
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/task/<int:task_id>/delete", methods=["POST"])
+@admin_required
+def learn_admin_delete_task(task_id):
+    db.learn_delete_task(task_id)
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/task/<int:task_id>/question/new", methods=["POST"])
+@admin_required
+def learn_admin_new_question(task_id):
+    q       = request.form.get("question", "").strip()
+    a       = request.form.get("choice_a", "").strip()
+    b_      = request.form.get("choice_b", "").strip()
+    c       = request.form.get("choice_c", "").strip()
+    d       = request.form.get("choice_d", "").strip()
+    correct = request.form.get("correct_choice", "").strip().lower()
+    if q and a and b_ and c and d and correct in ("a","b","c","d"):
+        db.learn_add_question(task_id, q, a, b_, c, d, correct)
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/question/<int:q_id>/delete", methods=["POST"])
+@admin_required
+def learn_admin_delete_question(q_id):
+    db.learn_delete_question(q_id)
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/settings", methods=["POST"])
+@admin_required
+def learn_admin_settings():
+    for key in ("watch_threshold_pct","bonus_first_watch","bonus_repeat_watch",
+                "quiz_pass_threshold","quiz_pass_multiplier",
+                "quiz_partial_multiplier","quiz_fail_multiplier"):
+        val = request.form.get(key, "").strip()
+        if val.isdigit():
+            db.learn_set_setting(key, val)
+    flash("Learn Hub settings saved.", "success")
+    return redirect(url_for("learn_admin"))
+
+
 # ---------------------------------------------------------------------------
 # Bootstrap — runs under both gunicorn and `python app.py`
 # ---------------------------------------------------------------------------
 
 db.init_db()
 db.seed_category_points()
+db.learn_seed_settings()
 _seed_admin()
 
 if __name__ == "__main__":

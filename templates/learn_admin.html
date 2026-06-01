@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Learn Hub Admin{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="mb-0">⚙️ Learn Hub Admin</h4>
+  <a href="{{ url_for('learn') }}" class="btn btn-sm btn-outline-secondary">← View Learn Hub</a>
+</div>
+
+<!-- Flash messages already handled by base -->
+
+<div class="row g-4">
+
+  <!-- Categories -->
+  <div class="col-12 col-lg-4">
+    <div class="card" style="background:#12172a;border-color:#1e2a45;">
+      <div class="card-header" style="background:#0d1117;border-color:#1e2a45;">
+        <strong class="text-white">Categories</strong>
+      </div>
+      <div class="card-body">
+        {% for cat in categories %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span>{{ cat.emoji }} {{ cat.name }}</span>
+          <span class="text-muted small">(order: {{ cat.display_order }})</span>
+          <form method="POST" action="{{ url_for('learn_admin_delete_category', cat_id=cat.id) }}" class="ms-auto">
+            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete category?')">✕</button>
+          </form>
+        </div>
+        {% else %}
+        <p class="text-muted small">No categories yet.</p>
+        {% endfor %}
+
+        <hr style="border-color:#1e2a45;">
+        <form method="POST" action="{{ url_for('learn_admin_new_category') }}">
+          <div class="mb-2">
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="Category name" required>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <input type="text" name="emoji" class="form-control form-control-sm" placeholder="Emoji" value="📚">
+            </div>
+            <div class="col-7">
+              <input type="number" name="display_order" class="form-control form-control-sm" placeholder="Sort order" value="0">
+            </div>
+          </div>
+          <button class="btn btn-sm btn-primary w-100">+ Add Category</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Learn Settings -->
+    <div class="card mt-4" style="background:#12172a;border-color:#1e2a45;">
+      <div class="card-header" style="background:#0d1117;border-color:#1e2a45;">
+        <strong class="text-white">Global Settings</strong>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('learn_admin_settings') }}">
+          {% set fields = [
+            ('watch_threshold_pct',    'Watch threshold %'),
+            ('bonus_first_watch',      'First-watch bonus pts'),
+            ('bonus_repeat_watch',     'Repeat-watch bonus pts'),
+            ('quiz_pass_threshold',    'Quiz pass (correct answers)'),
+            ('quiz_pass_multiplier',   'Pass multiplier %'),
+            ('quiz_partial_multiplier','Partial multiplier %'),
+            ('quiz_fail_multiplier',   'Fail multiplier %'),
+          ] %}
+          {% for key, label in fields %}
+          <div class="mb-2">
+            <label class="form-label text-muted small mb-0">{{ label }}</label>
+            <input type="number" name="{{ key }}" class="form-control form-control-sm"
+                   value="{{ settings.get(key, '') }}">
+          </div>
+          {% endfor %}
+          <button class="btn btn-sm btn-primary w-100 mt-2">Save Settings</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="col-12 col-lg-8">
+    <div class="card" style="background:#12172a;border-color:#1e2a45;">
+      <div class="card-header" style="background:#0d1117;border-color:#1e2a45;">
+        <strong class="text-white">Tasks</strong>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm text-white mb-0" style="border-color:#1e2a45;">
+            <thead style="background:#0d1117;">
+              <tr>
+                <th class="ps-3">Title</th>
+                <th>Category</th>
+                <th>Video</th>
+                <th>Bonus</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for task in tasks %}
+              <tr style="{{ 'opacity:0.5;' if not task.is_active }}">
+                <td class="ps-3">{{ task.title }}</td>
+                <td class="text-muted small">{{ task.cat_emoji }} {{ task.cat_name }}</td>
+                <td>{% if task.youtube_video_id %}▶{% endif %}</td>
+                <td class="text-info small">+{{ task.bonus_points_first }}</td>
+                <td>
+                  <div class="d-flex gap-1 justify-content-end pe-2">
+                    <form method="POST" action="{{ url_for('learn_admin_toggle_task', task_id=task.id) }}">
+                      <button class="btn btn-sm btn-outline-secondary">
+                        {{ '▶ Enable' if not task.is_active else '⏸ Disable' }}
+                      </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('learn_admin_delete_task', task_id=task.id) }}">
+                      <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete task and all its questions?')">✕</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-muted text-center py-3 ps-3">No tasks yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Task Form -->
+    <div class="card mt-4" style="background:#12172a;border-color:#1e2a45;">
+      <div class="card-header" style="background:#0d1117;border-color:#1e2a45;">
+        <strong class="text-white">Add Task</strong>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('learn_admin_new_task') }}">
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-md-8">
+              <input type="text" name="title" class="form-control" placeholder="Task title" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <select name="category_id" class="form-select" required>
+                <option value="">— Category —</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.emoji }} {{ cat.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <textarea name="description" class="form-control" rows="2" placeholder="Description (optional)"></textarea>
+          </div>
+          <div class="mb-3">
+            <input type="text" name="youtube_url" class="form-control"
+                   placeholder="YouTube URL or video ID (optional)">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <label class="form-label text-muted small">First bonus pts</label>
+              <input type="number" name="bonus_first" class="form-control form-control-sm" value="50">
+            </div>
+            <div class="col-4">
+              <label class="form-label text-muted small">Repeat bonus pts</label>
+              <input type="number" name="bonus_repeat" class="form-control form-control-sm" value="10">
+            </div>
+            <div class="col-4">
+              <label class="form-label text-muted small">Watch threshold %</label>
+              <input type="number" name="threshold" class="form-control form-control-sm" value="80">
+            </div>
+          </div>
+
+          <p class="text-muted small mb-2">Quiz questions (optional, up to 3):</p>
+          {% for i in range(1, 4) %}
+          <details class="mb-3">
+            <summary class="text-muted small" style="cursor:pointer;">Question {{ i }}</summary>
+            <div class="mt-2 ps-3">
+              <input type="text" name="q{{ i }}_question" class="form-control form-control-sm mb-2" placeholder="Question">
+              <div class="row g-1 mb-2">
+                <div class="col-1 d-flex align-items-center text-muted small">A</div>
+                <div class="col-11"><input type="text" name="q{{ i }}_a" class="form-control form-control-sm" placeholder="Choice A"></div>
+                <div class="col-1 d-flex align-items-center text-muted small">B</div>
+                <div class="col-11"><input type="text" name="q{{ i }}_b" class="form-control form-control-sm" placeholder="Choice B"></div>
+                <div class="col-1 d-flex align-items-center text-muted small">C</div>
+                <div class="col-11"><input type="text" name="q{{ i }}_c" class="form-control form-control-sm" placeholder="Choice C"></div>
+                <div class="col-1 d-flex align-items-center text-muted small">D</div>
+                <div class="col-11"><input type="text" name="q{{ i }}_d" class="form-control form-control-sm" placeholder="Choice D"></div>
+              </div>
+              <div>
+                <label class="text-muted small">Correct answer:</label>
+                <div class="d-flex gap-3">
+                  {% for c in ['a','b','c','d'] %}
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="q{{ i }}_correct" value="{{ c }}" id="q{{ i }}_correct_{{ c }}">
+                    <label class="form-check-label text-muted small" for="q{{ i }}_correct_{{ c }}">{{ c.upper() }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </details>
+          {% endfor %}
+
+          <button class="btn btn-primary">+ Add Task</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }} — Learn Hub{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('learn') }}" class="text-muted small text-decoration-none">← Back to Learn Hub</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+
+    <!-- Task header -->
+    <div class="mb-3">
+      <div class="text-muted small mb-1">{{ task.cat_emoji }} {{ task.cat_name }}</div>
+      <h4 class="text-white">{{ task.title }}</h4>
+      {% if task.description %}
+      <p class="text-muted">{{ task.description }}</p>
+      {% endif %}
+    </div>
+
+    <!-- YouTube player -->
+    {% if task.youtube_video_id %}
+    <div class="mb-3">
+      <div id="yt-player-wrap" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;background:#000;">
+        <div id="yt-player" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+      </div>
+
+      <!-- Watch progress bar -->
+      <div class="mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted small">Watch progress</span>
+          <span class="text-muted small" id="watch-pct-label">{{ watched_pct }}%</span>
+        </div>
+        <div class="progress" style="height:6px;background:#1e2a45;">
+          <div class="progress-bar bg-info" id="watch-bar" style="width:{{ watched_pct }}%;"></div>
+        </div>
+        {% if not quiz_unlocked %}
+        <div class="text-muted small mt-1">Watch {{ task.watch_threshold_pct }}% to unlock the quiz</div>
+        {% else %}
+        <div class="text-success small mt-1">✓ Video threshold reached — quiz unlocked!</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Completion form -->
+    <div class="card" style="background:#12172a;border-color:#1e2a45;">
+      <div class="card-body">
+        <h6 class="text-white mb-3">
+          {% if prior_completions %}♻️ Log again (repeat){% else %}🎯 Complete this task{% endif %}
+        </h6>
+
+        <form method="POST" action="{{ url_for('learn_complete', task_id=task.id) }}">
+
+          <!-- Quiz -->
+          {% set questions = questions %}
+          {% if questions %}
+          {% if quiz_unlocked or prior_completions %}
+          <div id="quiz-section" class="mb-4">
+            <p class="text-muted small mb-3">Answer the questions, then log your brag to earn bonus points.</p>
+            {% for q in questions %}
+            <div class="mb-3">
+              <p class="text-white small fw-semibold mb-2">{{ loop.index }}. {{ q.question }}</p>
+              {% for choice, label in [('a', q.choice_a), ('b', q.choice_b), ('c', q.choice_c), ('d', q.choice_d)] %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="q{{ q.id }}" id="q{{ q.id }}_{{ choice }}" value="{{ choice }}" required>
+                <label class="form-check-label text-muted small" for="q{{ q.id }}_{{ choice }}">
+                  <strong>{{ choice.upper() }}.</strong> {{ label }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="alert alert-secondary small mb-3" style="background:#1e2a45;border-color:#2a3a5c;color:#8e9bb4;">
+            Watch {{ task.watch_threshold_pct }}% of the video to unlock the quiz.
+          </div>
+          {% endif %}
+          {% endif %}
+
+          <!-- Brag content -->
+          <div class="mb-3">
+            <label class="form-label text-muted small">What did you do? <span class="text-danger">*</span></label>
+            <textarea class="form-control" name="brag_content" rows="3"
+              placeholder="e.g. Watched the kitchen cleaning video and scrubbed the stovetop…"
+              {% if questions and not quiz_unlocked and not prior_completions %}disabled{% endif %}
+            ></textarea>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="text-muted small">
+              {% if prior_completions %}
+              Repeat bonus: <strong class="text-info">+{{ task.bonus_points_repeat }} pts</strong>
+              {% else %}
+              First-time bonus: up to <strong class="text-info">+{{ task.bonus_points_first }} pts</strong>
+              {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary"
+              {% if questions and not quiz_unlocked and not prior_completions %}disabled{% endif %}>
+              Log & Earn Points
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Prior completions -->
+    {% if prior_completions %}
+    <div class="mt-3">
+      <h6 class="text-muted small">Your completions</h6>
+      {% for c in prior_completions %}
+      <div class="d-flex gap-2 align-items-center text-muted small mb-1">
+        <span>{{ c.completed_at[:10] }}</span>
+        <span class="text-info">+{{ c.bonus_awarded }} pts</span>
+        {% if c.quiz_score is not none %}
+        <span>Quiz: {{ c.quiz_score }}/{{ questions|length }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Sidebar info -->
+  <div class="col-12 col-lg-4">
+    <div class="card" style="background:#0d1117;border-color:#1e2a45;">
+      <div class="card-body">
+        <h6 class="text-white mb-3">Bonus Points</h6>
+        <div class="text-muted small">
+          <div class="d-flex justify-content-between mb-1">
+            <span>First watch (pass quiz)</span>
+            <strong class="text-info">{{ task.bonus_points_first }} pts</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span>First watch (partial)</span>
+            <strong class="text-warning">{{ (task.bonus_points_first * settings.quiz_partial_multiplier|int / 100)|int }} pts</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span>First watch (no pass)</span>
+            <strong class="text-muted">{{ (task.bonus_points_first * settings.quiz_fail_multiplier|int / 100)|int }} pts</strong>
+          </div>
+          {% if task.bonus_points_repeat %}
+          <hr style="border-color:#1e2a45;">
+          <div class="d-flex justify-content-between">
+            <span>Repeat watch</span>
+            <strong class="text-secondary">{{ task.bonus_points_repeat }} pts</strong>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if task.youtube_video_id %}
+<script>
+const VIDEO_ID   = "{{ task.youtube_video_id }}";
+const THRESHOLD  = {{ task.watch_threshold_pct }};
+const TASK_ID    = {{ task.id }};
+let   player, lastPct = {{ watched_pct }}, reported = false;
+
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player("yt-player", {
+    videoId: VIDEO_ID,
+    playerVars: { rel: 0, modestbranding: 1 },
+    events: { onStateChange: onStateChange }
+  });
+}
+
+function onStateChange(e) {
+  if (e.data === YT.PlayerState.PLAYING) {
+    clearInterval(window._watchTimer);
+    window._watchTimer = setInterval(tickWatch, 5000);
+  } else {
+    clearInterval(window._watchTimer);
+    tickWatch();
+  }
+}
+
+function tickWatch() {
+  if (!player || !player.getDuration) return;
+  const dur = player.getDuration();
+  if (!dur) return;
+  const pct = Math.round((player.getCurrentTime() / dur) * 100);
+  if (pct <= lastPct) return;
+  lastPct = pct;
+  document.getElementById("watch-pct-label").textContent = pct + "%";
+  document.getElementById("watch-bar").style.width = pct + "%";
+  fetch(`/learn/${TASK_ID}/watch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pct })
+  }).then(r => r.json()).then(data => {
+    if (data.unlocked && !reported) {
+      reported = true;
+      location.reload();
+    }
+  });
+}
+
+// Load YouTube IFrame API
+const tag = document.createElement("script");
+tag.src = "https://www.youtube.com/iframe_api";
+document.head.appendChild(tag);
+</script>
+{% endif %}
+{% endblock %}
