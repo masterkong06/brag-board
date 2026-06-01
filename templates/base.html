@@ -17,24 +17,41 @@
 <body>
 
 {% if session.user_id %}
-<nav class="navbar navbar-dark sticky-top">
+<nav class="navbar navbar-dark navbar-expand-md sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
       🏆 Brag Board
     </a>
-    <div class="d-flex align-items-center gap-3">
-      <a href="{{ url_for('learn') }}" class="text-white-50 small text-decoration-none">📚 Learn</a>
-      <a href="{{ url_for('rewards') }}" class="text-white-50 small text-decoration-none">🏆 Rewards</a>
-      {% if session.is_admin %}
-      <a href="{{ url_for('settings') }}" class="text-white-50 small text-decoration-none">⚙️ Settings</a>
-      {% endif %}
-      <a href="{{ url_for('profile') }}" class="d-flex align-items-center gap-2 text-decoration-none">
-        <div class="avatar-chip" style="background:{{ session.user_color }}">
-          {{ session.user_name[0].upper() }}
-        </div>
-        <span class="text-white small">{{ session.user_name }}</span>
-      </a>
-      <a href="{{ url_for('logout') }}" class="text-white-50 small text-decoration-none">Sign out</a>
+    <button class="navbar-toggler border-0" type="button"
+            data-bs-toggle="collapse" data-bs-target="#mainNav"
+            aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto align-items-md-center gap-md-3 mt-2 mt-md-0">
+        <li class="nav-item">
+          <a href="{{ url_for('learn') }}" class="nav-link text-white-50 small">📚 Learn</a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('rewards') }}" class="nav-link text-white-50 small">🏆 Rewards</a>
+        </li>
+        {% if session.is_admin %}
+        <li class="nav-item">
+          <a href="{{ url_for('settings') }}" class="nav-link text-white-50 small">⚙️ Settings</a>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+          <a href="{{ url_for('profile') }}" class="nav-link d-flex align-items-center gap-2 text-decoration-none">
+            <div class="avatar-chip" style="background:{{ session.user_color }}">
+              {{ session.user_name[0].upper() }}
+            </div>
+            <span class="text-white small">{{ session.user_name }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('logout') }}" class="nav-link text-white-50 small">Sign out</a>
+        </li>
+      </ul>
     </div>
   </div>
 </nav>
