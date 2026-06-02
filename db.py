@@ -154,6 +154,11 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
         except sqlite3.OperationalError:
             pass
+        # Migration: add profile_photo to users
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN profile_photo TEXT")
+        except sqlite3.OperationalError:
+            pass
         # Migration: rename learn_tasks bonus columns (short → long names)
         for old, new in [("bonus_pts_first", "bonus_points_first"),
                          ("bonus_pts_repeat", "bonus_points_repeat")]:
@@ -255,6 +260,21 @@ def update_user_email(user_id, email):
             "UPDATE users SET email = ? WHERE id = ?",
             (email or None, user_id),
         )
+
+
+def update_user_photo(user_id, filename):
+    with _conn() as conn:
+        conn.execute("UPDATE users SET profile_photo=? WHERE id=?", (filename, user_id))
+
+
+def update_user_password(user_id, new_hash):
+    with _conn() as conn:
+        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (new_hash, user_id))
+
+
+def get_user_by_id(user_id):
+    with _conn() as conn:
+        return conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
 
 
 def user_count():

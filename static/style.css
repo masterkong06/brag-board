@@ -199,6 +199,25 @@
 }
 
 /* ==========================================================================
+   Profile photo
+   ========================================================================== */
+.profile-avatar-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.15);
+  display: block;
+}
+.profile-avatar-img-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.15);
+}
+
+/* ==========================================================================
    Mobile feed/wishes tab switcher
    ========================================================================== */
 @media (max-width: 991.98px) {
