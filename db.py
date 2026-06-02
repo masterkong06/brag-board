@@ -154,6 +154,13 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
         except sqlite3.OperationalError:
             pass
+        # Migration: rename learn_tasks bonus columns (short → long names)
+        for old, new in [("bonus_pts_first", "bonus_points_first"),
+                         ("bonus_pts_repeat", "bonus_points_repeat")]:
+            try:
+                conn.execute(f"ALTER TABLE learn_tasks RENAME COLUMN {old} TO {new}")
+            except sqlite3.OperationalError:
+                pass
         # Migration: app_settings table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)
@@ -170,8 +177,8 @@ def init_db():
             CREATE TABLE IF NOT EXISTS learn_tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
                 description TEXT DEFAULT '', category_id INTEGER NOT NULL,
-                youtube_video_id TEXT, bonus_points_first INTEGER NOT NULL DEFAULT 50,
-                bonus_points_repeat INTEGER NOT NULL DEFAULT 10,
+                youtube_video_id TEXT, bonus_pts_first INTEGER NOT NULL DEFAULT 50,
+                bonus_pts_repeat INTEGER NOT NULL DEFAULT 10,
                 watch_threshold_pct INTEGER NOT NULL DEFAULT 80,
                 is_active INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT DEFAULT (datetime('now'))
