@@ -230,6 +230,7 @@ def rewards():
     leaderboard   = db.get_all_balances()
     pending       = db.get_pending_redemptions() if session.get("is_admin") else []
     all_rewards   = db.get_all_rewards()         if session.get("is_admin") else []
+    denial_cooldown = int(db.get_app_setting("denial_cooldown_hours", 24))
     return render_template(
         "rewards.html",
         rewards=rewards_list,
@@ -240,6 +241,7 @@ def rewards():
         pending=pending,
         all_rewards=all_rewards,
         categories=CATEGORIES,
+        denial_cooldown=denial_cooldown,
     )
 
 
@@ -253,6 +255,11 @@ def redeem_reward(reward_id):
     balance = db.get_user_points_balance(session["user_id"])
     if balance < reward["points_cost"]:
         flash("Not enough points for that reward.", "danger")
+        return redirect(url_for("rewards"))
+    remaining = db.get_denial_cooldown_remaining(session["user_id"], reward_id)
+    if remaining > 0:
+        hrs = int(remaining) + 1
+        flash(f"This redemption was recently denied. Try again in {hrs} hour{'s' if hrs != 1 else ''}.", "warning")
         return redirect(url_for("rewards"))
     db.request_redemption(session["user_id"], reward_id)
     flash(f"Redemption request sent for '{reward['name']}'! Waiting for approval.", "success")
@@ -284,6 +291,19 @@ def create_reward():
     if name:
         db.create_reward(name, description, points_cost, session["user_id"])
         flash(f"Reward '{name}' created.", "success")
+    return redirect(url_for("rewards") + "#admin")
+
+
+@app.route("/rewards/settings", methods=["POST"])
+@admin_required
+def update_reward_settings():
+    hours = request.form.get("denial_cooldown_hours", "24")
+    try:
+        hours = max(0, int(hours))
+    except ValueError:
+        hours = 24
+    db.set_app_setting("denial_cooldown_hours", hours)
+    flash("Reward settings saved.", "success")
     return redirect(url_for("rewards") + "#admin")
 
 

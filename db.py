@@ -126,6 +126,11 @@ CREATE TABLE IF NOT EXISTS learn_settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
@@ -149,6 +154,13 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
         except sqlite3.OperationalError:
             pass
+        # Migration: app_settings table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)
+        """)
+        conn.execute(
+            "INSERT OR IGNORE INTO app_settings (key,value) VALUES ('denial_cooldown_hours','24')"
+        )
         # Migrations: Learn Hub tables (safe to run repeatedly via CREATE IF NOT EXISTS)
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS learn_categories (
@@ -600,6 +612,47 @@ def resolve_redemption(redemption_id, status, resolved_by):
             SET status=?, resolved_at=datetime('now'), resolved_by=?
             WHERE id=?
         """, (status, resolved_by, redemption_id))
+
+
+# ---------------------------------------------------------------------------
+# App settings
+# ---------------------------------------------------------------------------
+
+def get_app_setting(key, default=None):
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT value FROM app_settings WHERE key=?", (key,)
+        ).fetchone()
+        return row["value"] if row else default
+
+
+def set_app_setting(key, value):
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO app_settings (key,value) VALUES (?,?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, str(value)),
+        )
+
+
+def get_denial_cooldown_remaining(user_id, reward_id):
+    """Returns hours remaining in cooldown (float), or 0 if no active cooldown."""
+    cooldown_hours = int(get_app_setting("denial_cooldown_hours", 24))
+    if cooldown_hours == 0:
+        return 0
+    with _conn() as conn:
+        row = conn.execute("""
+            SELECT resolved_at FROM redemptions
+            WHERE user_id=? AND reward_id=? AND status='denied'
+            ORDER BY resolved_at DESC LIMIT 1
+        """, (user_id, reward_id)).fetchone()
+    if not row or not row["resolved_at"]:
+        return 0
+    from datetime import datetime
+    resolved = datetime.fromisoformat(row["resolved_at"])
+    elapsed = (datetime.utcnow() - resolved).total_seconds() / 3600
+    remaining = cooldown_hours - elapsed
+    return max(0, remaining)
 
 
 # ---------------------------------------------------------------------------

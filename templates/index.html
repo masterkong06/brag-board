@@ -16,10 +16,20 @@
   </span>
 </div>
 
+{# Mobile-only tab switcher — hidden on lg+ where two columns show side-by-side #}
+<ul class="nav nav-pills nav-fill mb-3 d-lg-none" id="mobile-tabs">
+  <li class="nav-item">
+    <button class="nav-link active" data-target="feed-col">🏆 Feed</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-target="wishes-col">🌠 Wishes</button>
+  </li>
+</ul>
+
 <div class="row g-4">
 
   {# ════════════════════════════════ LEFT: FEED ════════════════════════════ #}
-  <div class="col-lg-7">
+  <div class="col-lg-7" id="feed-col">
 
     {# Post-a-brag form #}
     <div class="card border-0 shadow-sm mb-4">
@@ -135,7 +145,7 @@
   </div>
 
   {# ════════════════════════════════ RIGHT: WISH LIST ══════════════════════ #}
-  <div class="col-lg-5" id="wishes">
+  <div class="col-lg-5" id="wishes-col">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-transparent border-0 pt-3 pb-0 px-3">
         <h5 class="fw-bold mb-0">🌠 Wish List</h5>
@@ -313,7 +323,61 @@
   });
 })();
 
-document.querySelectorAll('.reaction-btn').forEach(btn => {
+// Mobile tab switcher
+(function() {
+  const tabs = document.getElementById('mobile-tabs');
+  if (!tabs) return;
+  tabs.querySelectorAll('[data-target]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      tabs.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const showId = this.dataset.target;
+      ['feed-col', 'wishes-col'].forEach(id => {
+        const el = document.getElementById(id);
+        if (id === showId) el.classList.add('tab-active');
+        else el.classList.remove('tab-active');
+      });
+    });
+  });
+})();
+
+// Reaction long-press tooltip (mobile) — shows who reacted
+const reactionToast = document.createElement('div');
+reactionToast.className = 'reaction-tooltip';
+reactionToast.style.cssText = 'display:none;position:fixed;z-index:9999;background:rgba(15,32,66,.95);color:#e2e8f0;padding:6px 12px;border-radius:8px;font-size:.82rem;pointer-events:none;border:1px solid rgba(255,255,255,.15);box-shadow:0 4px 16px rgba(0,0,0,.5);max-width:220px;text-align:center;';
+document.body.appendChild(reactionToast);
+
+function showReactionToast(btn, text) {
+  if (!text) return;
+  reactionToast.textContent = text;
+  reactionToast.style.display = 'block';
+  const r = btn.getBoundingClientRect();
+  const tw = reactionToast.offsetWidth;
+  let left = r.left + r.width / 2 - tw / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+  reactionToast.style.left = left + 'px';
+  reactionToast.style.top = (r.top - reactionToast.offsetHeight - 8 + window.scrollY) + 'px';
+  clearTimeout(reactionToast._t);
+  reactionToast._t = setTimeout(() => { reactionToast.style.display = 'none'; }, 2500);
+}
+
+document.addEventListener('click', () => { reactionToast.style.display = 'none'; });
+
+function bindReactionBtn(btn) {
+  let longPressTimer = null;
+  btn.addEventListener('touchstart', function(e) {
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      showReactionToast(btn, btn.title);
+    }, 500);
+  }, {passive: true});
+  btn.addEventListener('touchend', function() {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  });
+  btn.addEventListener('touchmove', function() {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  });
+
   btn.addEventListener('click', async function() {
     const bragId = this.dataset.brag;
     const emoji  = this.dataset.emoji;
@@ -325,7 +389,6 @@ document.querySelectorAll('.reaction-btn').forEach(btn => {
     const data = await res.json();
     if (data.error) return;
 
-    // Re-render all reaction buttons for this brag
     const card = document.getElementById(`brag-${bragId}`);
     card.querySelectorAll('.reaction-btn').forEach(b => {
       const e = b.dataset.emoji;
@@ -342,6 +405,8 @@ document.querySelectorAll('.reaction-btn').forEach(btn => {
       }
     });
   });
-});
+}
+
+document.querySelectorAll('.reaction-btn').forEach(bindReactionBtn);
 </script>
 {% endblock %}

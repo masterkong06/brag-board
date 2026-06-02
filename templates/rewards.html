@@ -178,6 +178,16 @@
       </div>
     </form>
 
+    {# Denial cooldown #}
+    <h6 class="fw-semibold mt-4 mb-2">⏳ Denial Cooldown</h6>
+    <form method="post" action="{{ url_for('update_reward_settings') }}" class="d-flex align-items-center gap-2">
+      <input name="denial_cooldown_hours" type="number" min="0"
+             value="{{ denial_cooldown }}"
+             class="form-control form-control-sm" style="max-width:90px;">
+      <span class="text-muted small">hours before a denied user can re-request (0 = no cooldown)</span>
+      <button class="btn btn-primary btn-sm ms-auto">Save</button>
+    </form>
+
   </div>
 </div>
 {% endif %}
