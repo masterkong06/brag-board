@@ -124,6 +124,436 @@
 }
 
 /* ==========================================================================
+   BEACHFRONT VIEWS (#74) — warm sand, deep ocean text, ocean blue accent
+   Light. Text 12.3:1 · muted 5.5:1 · accent 6.0:1
+   ========================================================================== */
+[data-theme="beachfront-views"] {
+  --bg-main:              #F5F0E4;
+  --bg-glow:              radial-gradient(circle at top, #D4EAF5 0%, #F5F0E4 65%);
+  --bg-card:              rgba(255, 255, 255, 0.93);
+  --bg-card-hover:        rgba(255, 255, 255, 1.0);
+  --navbar-bg:            rgba(245, 240, 228, 0.96);
+  --card-header-bg:       rgba(26, 46, 61, 0.04);
+  --input-bg:             rgba(250, 247, 240, 0.95);
+  --input-bg-focus:       #ffffff;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(245,240,228,.95) 0%, rgba(212,234,245,.90) 100%);
+  --text-main:            #1A2E3D;
+  --text-muted:           #4E636F;
+  --text-link:            #156285;
+  --accent-primary:       #156285;
+  --accent-hover:         #0E4A64;
+  --border-subtle:        rgba(21, 98, 133, 0.14);
+  --border-focus:         rgba(21, 98, 133, 0.38);
+  --btn-primary-shadow:   rgba(21, 98, 133, 0.35);
+  --reaction-btn-bg:      rgba(21, 98, 133, 0.07);
+  --reaction-btn-hover:   rgba(21, 98, 133, 0.14);
+  --wish-item-bg:         rgba(21, 98, 133, 0.05);
+  --category-badge-bg:    rgba(21, 98, 133, 0.08);
+  --card-hover-shadow:    rgba(26, 46, 61, 0.10);
+  --scrollbar-thumb:      rgba(21, 98, 133, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(26, 46, 61, 0.65);
+  --nav-link-color-main:  #1A2E3D;
+  --navbar-toggler-border: rgba(26, 46, 61, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2826%2c46%2c61%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
+   UNDER THE MOONLIGHT (#75) — deep midnight, silver moonlight, soft blue
+   Dark. Text 13.4:1 · muted 5.4:1 · accent 11.1:1
+   ========================================================================== */
+[data-theme="under-the-moonlight"] {
+  --bg-main:              #0E1320;
+  --bg-glow:              radial-gradient(circle at top, #1C2840 0%, #0E1320 70%);
+  --bg-card:              rgba(20, 28, 50, 0.72);
+  --bg-card-hover:        rgba(26, 36, 62, 0.90);
+  --navbar-bg:            rgba(14, 19, 32, 0.93);
+  --card-header-bg:       rgba(255, 255, 255, 0.04);
+  --input-bg:             rgba(10, 16, 32, 0.55);
+  --input-bg-focus:       rgba(14, 20, 40, 0.70);
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(14,19,32,.93) 0%, rgba(28,40,64,.88) 100%);
+  --text-main:            #D0DBF0;
+  --text-muted:           #7A8CAA;
+  --text-link:            #B8C8F0;
+  --accent-primary:       #B8C8F0;
+  --accent-hover:         #8AA8E0;
+  --border-subtle:        rgba(184, 200, 240, 0.14);
+  --border-focus:         rgba(184, 200, 240, 0.40);
+  --btn-primary-shadow:   rgba(184, 200, 240, 0.35);
+  --reaction-btn-bg:      rgba(184, 200, 240, 0.07);
+  --reaction-btn-hover:   rgba(184, 200, 240, 0.14);
+  --wish-item-bg:         rgba(184, 200, 240, 0.05);
+  --category-badge-bg:    rgba(184, 200, 240, 0.10);
+  --card-hover-shadow:    rgba(0, 0, 0, 0.50);
+  --scrollbar-thumb:      rgba(184, 200, 240, 0.18);
+  --close-filter:         invert(1) opacity(0.6);
+  --nav-link-color:       rgba(208, 219, 240, 0.60);
+  --nav-link-color-main:  #D0DBF0;
+  --navbar-toggler-border: rgba(208, 219, 240, 0.14);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28208%2c219%2c240%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.15); --btn-success-bg-hover: rgba(16, 185, 129, 0.28);
+  --btn-success-color:    #34d399; --btn-success-color-hover: #6ee7b7;
+  --btn-danger-bg:        rgba(239, 68, 68, 0.15); --btn-danger-bg-hover: rgba(239, 68, 68, 0.28);
+  --btn-danger-color:     #f87171; --btn-danger-color-hover: #fca5a5;
+  --btn-warning-bg:       rgba(245, 158, 11, 0.15); --btn-warning-bg-hover: rgba(245, 158, 11, 0.28);
+  --btn-warning-color:    #fbbf24; --btn-warning-color-hover: #fcd34d;
+  --btn-info-bg:          rgba(14, 165, 233, 0.15); --btn-info-bg-hover: rgba(14, 165, 233, 0.28);
+  --btn-info-color:       #38bdf8; --btn-info-color-hover: #7dd3fc;
+}
+
+/* ==========================================================================
+   MINTY FRESH (#77) — pale mint, deep forest text, fresh green accent
+   Light. Text 14.5:1 · muted 5.2:1 · accent 5.1:1
+   ========================================================================== */
+[data-theme="minty-fresh"] {
+  --bg-main:              #F2FAF6;
+  --bg-glow:              radial-gradient(circle at top, #C8EDD9 0%, #F2FAF6 65%);
+  --bg-card:              rgba(255, 255, 255, 0.95);
+  --bg-card-hover:        rgba(255, 255, 255, 1.0);
+  --navbar-bg:            rgba(240, 250, 244, 0.96);
+  --card-header-bg:       rgba(18, 41, 30, 0.04);
+  --input-bg:             rgba(242, 250, 246, 0.95);
+  --input-bg-focus:       #ffffff;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(240,250,244,.95) 0%, rgba(200,237,217,.90) 100%);
+  --text-main:            #12291E;
+  --text-muted:           #4A7060;
+  --text-link:            #137A4A;
+  --accent-primary:       #137A4A;
+  --accent-hover:         #0C5C37;
+  --border-subtle:        rgba(19, 122, 74, 0.14);
+  --border-focus:         rgba(19, 122, 74, 0.38);
+  --btn-primary-shadow:   rgba(19, 122, 74, 0.35);
+  --reaction-btn-bg:      rgba(19, 122, 74, 0.07);
+  --reaction-btn-hover:   rgba(19, 122, 74, 0.14);
+  --wish-item-bg:         rgba(19, 122, 74, 0.05);
+  --category-badge-bg:    rgba(19, 122, 74, 0.08);
+  --card-hover-shadow:    rgba(18, 41, 30, 0.10);
+  --scrollbar-thumb:      rgba(19, 122, 74, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(18, 41, 30, 0.65);
+  --nav-link-color-main:  #12291E;
+  --navbar-toggler-border: rgba(18, 41, 30, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2818%2c41%2c30%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
+   FROZEN LAKE (#85) — icy pale blue, deep navy text, ice blue accent
+   Light. Text 16.6:1 · muted 6.6:1 · accent 5.6:1
+   ========================================================================== */
+[data-theme="frozen-lake"] {
+  --bg-main:              #EEF5FC;
+  --bg-glow:              radial-gradient(circle at top, #C8DEF5 0%, #EEF5FC 65%);
+  --bg-card:              rgba(255, 255, 255, 0.93);
+  --bg-card-hover:        rgba(255, 255, 255, 1.0);
+  --navbar-bg:            rgba(236, 246, 252, 0.96);
+  --card-header-bg:       rgba(13, 30, 48, 0.04);
+  --input-bg:             rgba(238, 245, 252, 0.95);
+  --input-bg-focus:       #ffffff;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(236,246,252,.95) 0%, rgba(200,222,245,.90) 100%);
+  --text-main:            #0D1E30;
+  --text-muted:           #3A5A78;
+  --text-link:            #1565A8;
+  --accent-primary:       #1565A8;
+  --accent-hover:         #0E4D84;
+  --border-subtle:        rgba(21, 101, 168, 0.14);
+  --border-focus:         rgba(21, 101, 168, 0.38);
+  --btn-primary-shadow:   rgba(21, 101, 168, 0.35);
+  --reaction-btn-bg:      rgba(21, 101, 168, 0.07);
+  --reaction-btn-hover:   rgba(21, 101, 168, 0.14);
+  --wish-item-bg:         rgba(21, 101, 168, 0.05);
+  --category-badge-bg:    rgba(21, 101, 168, 0.08);
+  --card-hover-shadow:    rgba(13, 30, 48, 0.10);
+  --scrollbar-thumb:      rgba(21, 101, 168, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(13, 30, 48, 0.65);
+  --nav-link-color-main:  #0D1E30;
+  --navbar-toggler-border: rgba(13, 30, 48, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2813%2c30%2c48%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
+   AUTUMN ORCHARD (#95) — warm cream, deep bark, burnt orange accent
+   Light. Text 15.6:1 · muted 7.5:1 · accent 7.4:1
+   ========================================================================== */
+[data-theme="autumn-orchard"] {
+  --bg-main:              #FBF5EC;
+  --bg-glow:              radial-gradient(circle at top, #F5DDB0 0%, #FBF5EC 65%);
+  --bg-card:              rgba(255, 255, 255, 0.93);
+  --bg-card-hover:        rgba(255, 255, 255, 1.0);
+  --navbar-bg:            rgba(248, 240, 225, 0.96);
+  --card-header-bg:       rgba(42, 26, 8, 0.04);
+  --input-bg:             rgba(251, 245, 236, 0.95);
+  --input-bg-focus:       #ffffff;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(248,240,225,.95) 0%, rgba(245,221,176,.90) 100%);
+  --text-main:            #2A1A08;
+  --text-muted:           #6B4820;
+  --text-link:            #8B3500;
+  --accent-primary:       #8B3500;
+  --accent-hover:         #6A2800;
+  --border-subtle:        rgba(139, 53, 0, 0.14);
+  --border-focus:         rgba(139, 53, 0, 0.38);
+  --btn-primary-shadow:   rgba(139, 53, 0, 0.35);
+  --reaction-btn-bg:      rgba(139, 53, 0, 0.07);
+  --reaction-btn-hover:   rgba(139, 53, 0, 0.14);
+  --wish-item-bg:         rgba(139, 53, 0, 0.05);
+  --category-badge-bg:    rgba(139, 53, 0, 0.08);
+  --card-hover-shadow:    rgba(42, 26, 8, 0.10);
+  --scrollbar-thumb:      rgba(139, 53, 0, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(42, 26, 8, 0.65);
+  --nav-link-color-main:  #2A1A08;
+  --navbar-toggler-border: rgba(42, 26, 8, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2842%2c26%2c8%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
+   HARVEST MOON (#98) — deep amber night, warm moonlight, golden accent
+   Dark. Text 16.2:1 · muted 7.0:1 · accent 9.9:1
+   ========================================================================== */
+[data-theme="harvest-moon"] {
+  --bg-main:              #120A00;
+  --bg-glow:              radial-gradient(circle at top, #2E1800 0%, #120A00 70%);
+  --bg-card:              rgba(30, 16, 2, 0.78);
+  --bg-card-hover:        rgba(42, 24, 4, 0.92);
+  --navbar-bg:            rgba(18, 10, 0, 0.93);
+  --card-header-bg:       rgba(255, 229, 180, 0.05);
+  --input-bg:             rgba(20, 10, 0, 0.60);
+  --input-bg-focus:       rgba(28, 14, 0, 0.75);
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(18,10,0,.93) 0%, rgba(46,24,0,.88) 100%);
+  --text-main:            #FFE5B4;
+  --text-muted:           #C4905A;
+  --text-link:            #F4A832;
+  --accent-primary:       #F4A832;
+  --accent-hover:         #D08820;
+  --border-subtle:        rgba(244, 168, 50, 0.16);
+  --border-focus:         rgba(244, 168, 50, 0.42);
+  --btn-primary-shadow:   rgba(244, 168, 50, 0.40);
+  --reaction-btn-bg:      rgba(244, 168, 50, 0.08);
+  --reaction-btn-hover:   rgba(244, 168, 50, 0.16);
+  --wish-item-bg:         rgba(244, 168, 50, 0.05);
+  --category-badge-bg:    rgba(244, 168, 50, 0.10);
+  --card-hover-shadow:    rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb:      rgba(244, 168, 50, 0.20);
+  --close-filter:         invert(1) opacity(0.6);
+  --nav-link-color:       rgba(255, 229, 180, 0.60);
+  --nav-link-color-main:  #FFE5B4;
+  --navbar-toggler-border: rgba(255, 229, 180, 0.16);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255%2c229%2c180%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.15); --btn-success-bg-hover: rgba(16, 185, 129, 0.28);
+  --btn-success-color:    #34d399; --btn-success-color-hover: #6ee7b7;
+  --btn-danger-bg:        rgba(239, 68, 68, 0.15); --btn-danger-bg-hover: rgba(239, 68, 68, 0.28);
+  --btn-danger-color:     #f87171; --btn-danger-color-hover: #fca5a5;
+  --btn-warning-bg:       rgba(245, 158, 11, 0.15); --btn-warning-bg-hover: rgba(245, 158, 11, 0.28);
+  --btn-warning-color:    #fbbf24; --btn-warning-color-hover: #fcd34d;
+  --btn-info-bg:          rgba(14, 165, 233, 0.15); --btn-info-bg-hover: rgba(14, 165, 233, 0.28);
+  --btn-info-color:       #38bdf8; --btn-info-color-hover: #7dd3fc;
+}
+
+/* ==========================================================================
+   CHILI SPICE (#6) — deep chili night, warm cream, hot red accent
+   Dark. Text 14.8:1 · muted 6.5:1 · accent 6.6:1
+   ========================================================================== */
+[data-theme="chili-spice"] {
+  --bg-main:              #150000;
+  --bg-glow:              radial-gradient(circle at top, #330A00 0%, #150000 70%);
+  --bg-card:              rgba(30, 5, 2, 0.78);
+  --bg-card-hover:        rgba(44, 8, 4, 0.92);
+  --navbar-bg:            rgba(21, 0, 0, 0.93);
+  --card-header-bg:       rgba(255, 214, 204, 0.05);
+  --input-bg:             rgba(24, 4, 2, 0.60);
+  --input-bg-focus:       rgba(32, 6, 4, 0.75);
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(21,0,0,.93) 0%, rgba(51,10,0,.88) 100%);
+  --text-main:            #FFD6CC;
+  --text-muted:           #CC8070;
+  --text-link:            #FF6040;
+  --accent-primary:       #FF6040;
+  --accent-hover:         #E04020;
+  --border-subtle:        rgba(255, 96, 64, 0.16);
+  --border-focus:         rgba(255, 96, 64, 0.42);
+  --btn-primary-shadow:   rgba(255, 96, 64, 0.40);
+  --reaction-btn-bg:      rgba(255, 96, 64, 0.08);
+  --reaction-btn-hover:   rgba(255, 96, 64, 0.16);
+  --wish-item-bg:         rgba(255, 96, 64, 0.05);
+  --category-badge-bg:    rgba(255, 96, 64, 0.10);
+  --card-hover-shadow:    rgba(0, 0, 0, 0.55);
+  --scrollbar-thumb:      rgba(255, 96, 64, 0.20);
+  --close-filter:         invert(1) opacity(0.6);
+  --nav-link-color:       rgba(255, 214, 204, 0.60);
+  --nav-link-color-main:  #FFD6CC;
+  --navbar-toggler-border: rgba(255, 214, 204, 0.16);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255%2c214%2c204%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.15); --btn-success-bg-hover: rgba(16, 185, 129, 0.28);
+  --btn-success-color:    #34d399; --btn-success-color-hover: #6ee7b7;
+  --btn-danger-bg:        rgba(239, 68, 68, 0.15); --btn-danger-bg-hover: rgba(239, 68, 68, 0.28);
+  --btn-danger-color:     #f87171; --btn-danger-color-hover: #fca5a5;
+  --btn-warning-bg:       rgba(245, 158, 11, 0.15); --btn-warning-bg-hover: rgba(245, 158, 11, 0.28);
+  --btn-warning-color:    #fbbf24; --btn-warning-color-hover: #fcd34d;
+  --btn-info-bg:          rgba(14, 165, 233, 0.15); --btn-info-bg-hover: rgba(14, 165, 233, 0.28);
+  --btn-info-color:       #38bdf8; --btn-info-color-hover: #7dd3fc;
+}
+
+/* ==========================================================================
+   WISTERIA BLOOM (#10) — pale lavender, deep plum, wisteria purple accent
+   Light. Text 16.6:1 · muted 6.2:1 · accent 8.7:1
+   ========================================================================== */
+[data-theme="wisteria-bloom"] {
+  --bg-main:              #F6F2FB;
+  --bg-glow:              radial-gradient(circle at top, #E4D5F5 0%, #F6F2FB 65%);
+  --bg-card:              rgba(255, 255, 255, 0.93);
+  --bg-card-hover:        rgba(255, 255, 255, 1.0);
+  --navbar-bg:            rgba(244, 238, 251, 0.96);
+  --card-header-bg:       rgba(30, 12, 53, 0.04);
+  --input-bg:             rgba(246, 242, 251, 0.95);
+  --input-bg-focus:       #ffffff;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(244,238,251,.95) 0%, rgba(228,213,245,.90) 100%);
+  --text-main:            #1E0C35;
+  --text-muted:           #6B5080;
+  --text-link:            #6A1B9A;
+  --accent-primary:       #6A1B9A;
+  --accent-hover:         #4E1475;
+  --border-subtle:        rgba(106, 27, 154, 0.14);
+  --border-focus:         rgba(106, 27, 154, 0.38);
+  --btn-primary-shadow:   rgba(106, 27, 154, 0.35);
+  --reaction-btn-bg:      rgba(106, 27, 154, 0.07);
+  --reaction-btn-hover:   rgba(106, 27, 154, 0.14);
+  --wish-item-bg:         rgba(106, 27, 154, 0.05);
+  --category-badge-bg:    rgba(106, 27, 154, 0.08);
+  --card-hover-shadow:    rgba(30, 12, 53, 0.10);
+  --scrollbar-thumb:      rgba(106, 27, 154, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(30, 12, 53, 0.65);
+  --nav-link-color-main:  #1E0C35;
+  --navbar-toggler-border: rgba(30, 12, 53, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2830%2c12%2c53%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
+   ZESTY LEMON (#28) — pale lemon, deep lemon peel, gold-green accent
+   Light. Text 17.9:1 · muted 7.8:1 · accent 5.8:1
+   ========================================================================== */
+[data-theme="zesty-lemon"] {
+  --bg-main:              #FFFDE8;
+  --bg-glow:              radial-gradient(circle at top, #FFF59D 0%, #FFFDE8 65%);
+  --bg-card:              rgba(255, 255, 252, 0.95);
+  --bg-card-hover:        rgba(255, 255, 250, 1.0);
+  --navbar-bg:            rgba(255, 250, 225, 0.96);
+  --card-header-bg:       rgba(26, 21, 0, 0.04);
+  --input-bg:             rgba(255, 253, 232, 0.95);
+  --input-bg-focus:       #fffffe;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(255,250,225,.95) 0%, rgba(255,245,157,.90) 100%);
+  --text-main:            #1A1500;
+  --text-muted:           #5C5000;
+  --text-link:            #7A6200;
+  --accent-primary:       #7A6200;
+  --accent-hover:         #5C4900;
+  --border-subtle:        rgba(122, 98, 0, 0.16);
+  --border-focus:         rgba(122, 98, 0, 0.40);
+  --btn-primary-shadow:   rgba(122, 98, 0, 0.35);
+  --reaction-btn-bg:      rgba(122, 98, 0, 0.07);
+  --reaction-btn-hover:   rgba(122, 98, 0, 0.14);
+  --wish-item-bg:         rgba(122, 98, 0, 0.05);
+  --category-badge-bg:    rgba(122, 98, 0, 0.08);
+  --card-hover-shadow:    rgba(26, 21, 0, 0.10);
+  --scrollbar-thumb:      rgba(122, 98, 0, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(26, 21, 0, 0.65);
+  --nav-link-color-main:  #1A1500;
+  --navbar-toggler-border: rgba(26, 21, 0, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2826%2c21%2c0%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
+   MANGO POPSICLE (#32) — pale mango cream, deep brown, deep orange accent
+   Light. Text 18.2:1 · muted 7.7:1 · accent 6.4:1
+   ========================================================================== */
+[data-theme="mango-popsicle"] {
+  --bg-main:              #FFF8F0;
+  --bg-glow:              radial-gradient(circle at top, #FFD9A8 0%, #FFF8F0 65%);
+  --bg-card:              rgba(255, 255, 252, 0.95);
+  --bg-card-hover:        rgba(255, 255, 250, 1.0);
+  --navbar-bg:            rgba(255, 245, 230, 0.96);
+  --card-header-bg:       rgba(31, 10, 0, 0.04);
+  --input-bg:             rgba(255, 248, 240, 0.95);
+  --input-bg-focus:       #fffffe;
+  --pulse-bar-bg:         linear-gradient(90deg, rgba(255,245,230,.95) 0%, rgba(255,217,168,.90) 100%);
+  --text-main:            #1F0A00;
+  --text-muted:           #7A4020;
+  --text-link:            #A03C00;
+  --accent-primary:       #A03C00;
+  --accent-hover:         #7A2C00;
+  --border-subtle:        rgba(160, 60, 0, 0.14);
+  --border-focus:         rgba(160, 60, 0, 0.38);
+  --btn-primary-shadow:   rgba(160, 60, 0, 0.35);
+  --reaction-btn-bg:      rgba(160, 60, 0, 0.07);
+  --reaction-btn-hover:   rgba(160, 60, 0, 0.14);
+  --wish-item-bg:         rgba(160, 60, 0, 0.05);
+  --category-badge-bg:    rgba(160, 60, 0, 0.08);
+  --card-hover-shadow:    rgba(31, 10, 0, 0.10);
+  --scrollbar-thumb:      rgba(160, 60, 0, 0.18);
+  --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(31, 10, 0, 0.65);
+  --nav-link-color-main:  #1F0A00;
+  --navbar-toggler-border: rgba(31, 10, 0, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2831%2c10%2c0%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  --btn-success-bg:       rgba(16, 185, 129, 0.12); --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
+  --btn-success-color:    #0f7a5a; --btn-success-color-hover: #0a5c43;
+  --btn-danger-bg:        rgba(220, 38, 38, 0.10); --btn-danger-bg-hover: rgba(220, 38, 38, 0.20);
+  --btn-danger-color:     #b91c1c; --btn-danger-color-hover: #991b1b;
+  --btn-warning-bg:       rgba(180, 112, 0, 0.10); --btn-warning-bg-hover: rgba(180, 112, 0, 0.20);
+  --btn-warning-color:    #92580a; --btn-warning-color-hover: #6e4007;
+  --btn-info-bg:          rgba(8, 120, 160, 0.10); --btn-info-bg-hover: rgba(8, 120, 160, 0.20);
+  --btn-info-color:       #0369a1; --btn-info-color-hover: #0a527a;
+}
+
+/* ==========================================================================
    Base
    ========================================================================== */
 body {

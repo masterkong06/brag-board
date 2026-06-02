@@ -34,8 +34,18 @@ CATEGORIES = [
 ]
 EMOJIS = ["❤️", "🙌", "🔥"]
 THEMES = [
-    ("cobalt-sky",    "#4A9EFF", "Cobalt Sky"),
-    ("golden-taupe",  "#7A5900", "Golden Taupe"),
+    ("cobalt-sky",         "#4A9EFF", "Cobalt Sky"),
+    ("golden-taupe",       "#7A5900", "Golden Taupe"),
+    ("beachfront-views",   "#156285", "Beachfront Views"),
+    ("under-the-moonlight","#B8C8F0", "Under the Moonlight"),
+    ("minty-fresh",        "#137A4A", "Minty Fresh"),
+    ("frozen-lake",        "#1565A8", "Frozen Lake"),
+    ("autumn-orchard",     "#8B3500", "Autumn Orchard"),
+    ("harvest-moon",       "#F4A832", "Harvest Moon"),
+    ("chili-spice",        "#FF6040", "Chili Spice"),
+    ("wisteria-bloom",     "#6A1B9A", "Wisteria Bloom"),
+    ("zesty-lemon",        "#7A6200", "Zesty Lemon"),
+    ("mango-popsicle",     "#A03C00", "Mango Popsicle"),
 ]
 AVATAR_COLORS = ["#4361ee","#f72585","#7209b7","#3a0ca3","#4cc9f0",
                  "#f4a261","#2a9d8f","#e76f51","#264653","#e9c46a"]
