@@ -202,8 +202,8 @@
    Mobile feed/wishes tab switcher
    ========================================================================== */
 @media (max-width: 991.98px) {
-  #wishes-col { display: none; }
-  #wishes-col.tab-active { display: block !important; }
+  #feed-col, #wishes-col { display: none; }
+  #feed-col.tab-active, #wishes-col.tab-active { display: block !important; }
 }
 
 /* ==========================================================================
