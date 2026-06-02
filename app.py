@@ -582,7 +582,7 @@ def learn_complete(task_id):
     questions = db.learn_get_quiz_questions(task_id)
     brag_content = request.form.get("brag_content", "").strip()
     if not brag_content:
-        flash("Please describe what you did before logging the brag.", "warning")
+        flash("Add a note about what you took on before sharing.", "warning")
         return redirect(url_for("learn_task", task_id=task_id))
 
     # Score quiz if questions exist
