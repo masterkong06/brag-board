@@ -42,9 +42,14 @@
         {% endif %}
         <li class="nav-item">
           <a href="{{ url_for('profile') }}" class="nav-link d-flex align-items-center gap-2 text-decoration-none">
+            {% if session.user_photo %}
+            <img src="{{ url_for('static', filename='uploads/profiles/' + session.user_photo) }}"
+                 class="profile-avatar-img-sm" alt="{{ session.user_name }}">
+            {% else %}
             <div class="avatar-chip" style="background:{{ session.user_color }}">
               {{ session.user_name[0].upper() }}
             </div>
+            {% endif %}
             <span class="text-white small">{{ session.user_name }}</span>
           </a>
         </li>

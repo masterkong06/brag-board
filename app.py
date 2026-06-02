@@ -19,7 +19,9 @@ app.secret_key = _secret
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB upload limit
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
+PROFILE_PHOTO_FOLDER = os.path.join(UPLOAD_FOLDER, "profiles")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PROFILE_PHOTO_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 
 CATEGORIES = [
@@ -96,6 +98,7 @@ def login():
             session["username"] = user["username"]
             session["user_color"] = user["color"]
             session["is_admin"] = bool(user["is_admin"])
+            session["user_photo"] = user["profile_photo"]
             return redirect(url_for("index"))
         error = "Invalid username or password."
     return render_template("login.html", error=error)
@@ -336,16 +339,55 @@ def update_category_points():
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
+    uid = session["user_id"]
     if request.method == "POST":
-        new_name = request.form.get("name", "").strip()
-        if new_name:
-            db.update_user_name(session["user_id"], new_name)
-            session["user_name"] = new_name
-            flash("Display name updated!", "success")
-        else:
-            flash("Name can't be empty.", "danger")
+        action = request.form.get("action", "name")
+
+        if action == "name":
+            new_name = request.form.get("name", "").strip()
+            if new_name:
+                db.update_user_name(uid, new_name)
+                session["user_name"] = new_name
+                flash("Display name updated!", "success")
+            else:
+                flash("Name can't be empty.", "danger")
+
+        elif action == "password":
+            current_pw  = request.form.get("current_password", "")
+            new_pw      = request.form.get("new_password", "").strip()
+            confirm_pw  = request.form.get("confirm_password", "").strip()
+            user_row    = db.get_user_by_id(uid)
+            if not verify_password(current_pw, user_row["password_hash"]):
+                flash("Current password is incorrect.", "danger")
+            elif len(new_pw) < 6:
+                flash("New password must be at least 6 characters.", "danger")
+            elif new_pw != confirm_pw:
+                flash("Passwords don't match.", "danger")
+            else:
+                db.update_user_password(uid, hash_password(new_pw))
+                flash("Password updated!", "success")
+
+        elif action == "photo":
+            file_obj = request.files.get("photo")
+            if file_obj and file_obj.filename and _allowed_file(file_obj.filename):
+                ext = secure_filename(file_obj.filename).rsplit(".", 1)[-1].lower()
+                filename = f"profile_{uid}_{uuid.uuid4().hex[:8]}.{ext}"
+                file_obj.save(os.path.join(PROFILE_PHOTO_FOLDER, filename))
+                old_user = db.get_user_by_id(uid)
+                if old_user["profile_photo"]:
+                    try:
+                        os.remove(os.path.join(PROFILE_PHOTO_FOLDER, old_user["profile_photo"]))
+                    except FileNotFoundError:
+                        pass
+                db.update_user_photo(uid, filename)
+                session["user_photo"] = filename
+                flash("Profile photo updated!", "success")
+            else:
+                flash("Invalid file — use jpg, png, gif, or webp.", "danger")
+
         return redirect(url_for("profile"))
-    uid           = session["user_id"]
+
+    user_row      = db.get_user_by_id(uid)
     my_badges     = db.get_user_badges(uid)
     my_streak     = db.get_user_streak(uid)
     longest       = db.get_user_longest_streak(uid)
@@ -354,6 +396,7 @@ def profile():
     held_slugs    = {b["badge_slug"] for b in my_badges}
     return render_template(
         "profile.html",
+        user=user_row,
         my_badges=my_badges,
         my_streak=my_streak,
         longest_streak=longest,

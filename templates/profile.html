@@ -11,8 +11,15 @@
 
         {# Avatar + stats #}
         <div class="d-flex align-items-center gap-3 my-3">
-          <div class="avatar-chip avatar-lg" style="background:{{ session.user_color }}">
-            {{ session.user_name[0].upper() }}
+          <div class="profile-avatar-wrap position-relative">
+            {% if user.profile_photo %}
+            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_photo) }}"
+                 class="profile-avatar-img" alt="Profile photo">
+            {% else %}
+            <div class="avatar-chip avatar-lg" style="background:{{ session.user_color }}">
+              {{ session.user_name[0].upper() }}
+            </div>
+            {% endif %}
           </div>
           <div>
             <div class="fw-bold fs-5">{{ session.user_name }}</div>
@@ -49,8 +56,28 @@
 
         <hr class="my-3">
 
+        {# Profile photo upload #}
+        <form method="post" enctype="multipart/form-data" id="photo-form">
+          <input type="hidden" name="action" value="photo">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Profile Photo</label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="file" name="photo" id="profile-photo-input" accept="image/*"
+                     class="form-control form-control-sm" style="max-width:260px;">
+              <button type="submit" class="btn btn-outline-secondary btn-sm">Upload</button>
+            </div>
+            <div class="form-text">jpg, png, gif, webp — will be shown as a circle.</div>
+            <div id="profile-photo-preview-wrap" style="display:none;margin-top:8px;">
+              <img id="profile-photo-preview" class="profile-avatar-img" alt="Preview">
+            </div>
+          </div>
+        </form>
+
+        <hr class="my-3">
+
         {# Edit name form #}
         <form method="post">
+          <input type="hidden" name="action" value="name">
           <div class="mb-3">
             <label class="form-label small fw-semibold">Display Name</label>
             <input name="name" type="text" class="form-control"
@@ -62,9 +89,44 @@
         </form>
 
         <hr class="my-3">
+
+        {# Change password form #}
+        <form method="post">
+          <input type="hidden" name="action" value="password">
+          <div class="small fw-semibold mb-3">Change Password</div>
+          <div class="mb-2">
+            <input name="current_password" type="password" class="form-control form-control-sm"
+                   placeholder="Current password" required autocomplete="current-password">
+          </div>
+          <div class="mb-2">
+            <input name="new_password" type="password" class="form-control form-control-sm"
+                   placeholder="New password (min 6 chars)" required autocomplete="new-password">
+          </div>
+          <div class="mb-3">
+            <input name="confirm_password" type="password" class="form-control form-control-sm"
+                   placeholder="Confirm new password" required autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-outline-primary w-100 btn-sm">Update Password</button>
+        </form>
+
+        <hr class="my-3">
         <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100 btn-sm">← Back to Board</a>
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('profile-photo-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const wrap = document.getElementById('profile-photo-preview-wrap');
+  const img  = document.getElementById('profile-photo-preview');
+  const reader = new FileReader();
+  reader.onload = e => { img.src = e.target.result; wrap.style.display = ''; };
+  reader.readAsDataURL(file);
+});
+</script>
 {% endblock %}
