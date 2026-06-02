@@ -54,6 +54,12 @@
   --btn-info-color:       #38bdf8;
   --btn-info-color-hover: #7dd3fc;
 
+  /* ── Navbar text & toggler ──────────────────────────── */
+  --nav-link-color:       rgba(255, 255, 255, 0.60);
+  --nav-link-color-main:  #ffffff;
+  --navbar-toggler-border: rgba(255, 255, 255, 0.12);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255%2c255%2c255%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+
   /* ── Misc ───────────────────────────────────────────── */
   --font-sans:            -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif;
   --radius-sm:            6px;
@@ -94,6 +100,10 @@
   --card-hover-shadow:    rgba(45, 33, 23, 0.10);
   --scrollbar-thumb:      rgba(122, 89, 0, 0.18);
   --close-filter:         opacity(0.55);
+  --nav-link-color:       rgba(45, 33, 23, 0.65);
+  --nav-link-color-main:  #2D2117;
+  --navbar-toggler-border: rgba(45, 33, 23, 0.18);
+  --navbar-toggler-icon:  url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2845%2c33%2c23%2c0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 
   --btn-success-bg:       rgba(16, 185, 129, 0.12);
   --btn-success-bg-hover: rgba(16, 185, 129, 0.22);
@@ -155,10 +165,33 @@ a:hover { color: var(--accent-primary); }
 }
 
 .navbar-brand {
-  color: var(--text-main) !important;
+  color: var(--nav-link-color-main) !important;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: -0.01em;
+}
+
+.navbar .nav-link,
+.navbar .nav-link.text-white-50,
+.navbar .text-white-50 {
+  color: var(--nav-link-color) !important;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: var(--nav-link-color-main) !important;
+}
+
+.navbar .text-white {
+  color: var(--nav-link-color-main) !important;
+}
+
+.navbar-toggler {
+  border-color: var(--navbar-toggler-border) !important;
+}
+
+.navbar-toggler-icon {
+  background-image: var(--navbar-toggler-icon) !important;
 }
 
 /* ==========================================================================
