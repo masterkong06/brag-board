@@ -56,6 +56,27 @@
 
         <hr class="my-3">
 
+        {# Theme picker #}
+        <form method="post" id="theme-form">
+          <input type="hidden" name="action" value="theme">
+          <input type="hidden" name="theme" id="theme-input" value="{{ session.get('user_theme', 'cobalt-sky') }}">
+          <div class="small fw-semibold mb-2">Color Theme</div>
+          <div class="d-flex flex-wrap gap-2 mb-1">
+            {% for slug, color, label in themes %}
+            <button type="button"
+                    class="theme-swatch {% if session.get('user_theme','cobalt-sky') == slug %}theme-swatch-active{% endif %}"
+                    data-slug="{{ slug }}" data-label="{{ label }}"
+                    title="{{ label }}"
+                    style="background:{{ color }};"></button>
+            {% endfor %}
+          </div>
+          <div class="form-text" id="theme-label">
+            {% for slug, color, label in themes %}{% if session.get('user_theme','cobalt-sky') == slug %}{{ label }}{% endif %}{% endfor %}
+          </div>
+        </form>
+
+        <hr class="my-3">
+
         {# Profile photo upload #}
         <form method="post" enctype="multipart/form-data" id="photo-form">
           <input type="hidden" name="action" value="photo">
@@ -119,14 +140,30 @@
 
 {% block scripts %}
 <script>
+// Photo preview
 document.getElementById('profile-photo-input').addEventListener('change', function() {
   const file = this.files[0];
   if (!file) return;
-  const wrap = document.getElementById('profile-photo-preview-wrap');
-  const img  = document.getElementById('profile-photo-preview');
   const reader = new FileReader();
-  reader.onload = e => { img.src = e.target.result; wrap.style.display = ''; };
+  reader.onload = e => {
+    document.getElementById('profile-photo-preview').src = e.target.result;
+    document.getElementById('profile-photo-preview-wrap').style.display = '';
+  };
   reader.readAsDataURL(file);
+});
+
+// Theme switcher — instant preview + auto-save
+document.querySelectorAll('.theme-swatch').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const slug = this.dataset.slug;
+    document.documentElement.setAttribute('data-theme', slug);
+    document.getElementById('theme-input').value = slug;
+    document.getElementById('theme-label').textContent = this.dataset.label;
+    document.querySelectorAll('.theme-swatch').forEach(b => {
+      b.classList.toggle('theme-swatch-active', b === this);
+    });
+    document.getElementById('theme-form').submit();
+  });
 });
 </script>
 {% endblock %}

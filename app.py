@@ -33,6 +33,20 @@ CATEGORIES = [
     ("other",    "✨",  "Other"),
 ]
 EMOJIS = ["❤️", "🙌", "🔥"]
+THEMES = [
+    ("cobalt-sky",         "#4A9EFF", "Cobalt Sky"),
+    ("golden-taupe",       "#7A5900", "Golden Taupe"),
+    ("beachfront-views",   "#156285", "Beachfront Views"),
+    ("under-the-moonlight","#B0A8D8", "Under the Moonlight"),
+    ("minty-fresh",        "#0C5C37", "Minty Fresh"),
+    ("frozen-lake",        "#0E4A84", "Frozen Lake"),
+    ("autumn-orchard",     "#8B3500", "Autumn Orchard"),
+    ("harvest-moon",       "#F4A832", "Harvest Moon"),
+    ("chili-spice",        "#FF6040", "Chili Spice"),
+    ("wisteria-bloom",     "#6A1B9A", "Wisteria Bloom"),
+    ("zesty-lemon",        "#7A6200", "Zesty Lemon"),
+    ("mango-popsicle",     "#A03C00", "Mango Popsicle"),
+]
 AVATAR_COLORS = ["#4361ee","#f72585","#7209b7","#3a0ca3","#4cc9f0",
                  "#f4a261","#2a9d8f","#e76f51","#264653","#e9c46a"]
 
@@ -99,6 +113,7 @@ def login():
             session["user_color"] = user["color"]
             session["is_admin"] = bool(user["is_admin"])
             session["user_photo"] = user["profile_photo"]
+            session["user_theme"] = user["theme"] or "cobalt-sky"
             return redirect(url_for("index"))
         error = "Invalid username or password."
     return render_template("login.html", error=error)
@@ -367,6 +382,12 @@ def profile():
                 db.update_user_password(uid, hash_password(new_pw))
                 flash("Password updated!", "success")
 
+        elif action == "theme":
+            theme = request.form.get("theme", "cobalt-sky")
+            if theme in {t[0] for t in THEMES}:
+                db.update_user_theme(uid, theme)
+                session["user_theme"] = theme
+
         elif action == "photo":
             file_obj = request.files.get("photo")
             if file_obj and file_obj.filename and _allowed_file(file_obj.filename):
@@ -404,6 +425,7 @@ def profile():
         all_badges=all_badge_def,
         held_slugs=held_slugs,
         badge_map=badge_engine.BADGE_MAP,
+        themes=THEMES,
     )
 
 
