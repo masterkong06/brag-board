@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import avatar_chip %}
 {% block title %}Settings — Brag Board{% endblock %}
 {% block content %}
 <div class="row g-4">
@@ -59,9 +60,7 @@
         {% for user in users %}
         <div class="py-2 border-bottom">
           <div class="d-flex align-items-center gap-3 mb-1">
-            <div class="avatar-chip" style="background:{{ user.color }}">
-              {{ user.name[0].upper() }}
-            </div>
+            {{ avatar_chip(user.name, user.color, user.profile_photo) }}
             <div class="flex-grow-1">
               <div class="fw-semibold">{{ user.name }}
                 {% if user.is_admin %}<span class="badge bg-primary ms-1" style="font-size:.65rem;">admin</span>{% endif %}

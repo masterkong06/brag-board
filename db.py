@@ -299,7 +299,8 @@ def user_count():
 def get_brags():
     with _conn() as conn:
         return conn.execute("""
-            SELECT b.*, u.name AS user_name, u.color AS user_color
+            SELECT b.*, u.name AS user_name, u.color AS user_color,
+                   u.profile_photo AS user_photo
             FROM brags b
             JOIN users u ON b.user_id = u.id
             ORDER BY b.created_at DESC
@@ -406,7 +407,7 @@ def get_wishes():
     with _conn() as conn:
         return conn.execute("""
             SELECT w.*, u.name AS user_name, u.color AS user_color,
-                   b.content AS fulfilled_content
+                   u.profile_photo AS user_photo, b.content AS fulfilled_content
             FROM wishes w
             JOIN users u ON w.user_id = u.id
             LEFT JOIN brags b ON w.fulfilled_by_brag_id = b.id
@@ -532,7 +533,7 @@ def get_all_balances():
     """Returns [{user_id, name, color, earned, spent, balance}] for leaderboard."""
     with _conn() as conn:
         earned_rows = conn.execute("""
-            SELECT u.id AS user_id, u.name, u.color,
+            SELECT u.id AS user_id, u.name, u.color, u.profile_photo,
                    COALESCE(SUM(COALESCE(cp.points, 1)), 0) AS earned
             FROM users u
             LEFT JOIN brags b ON b.user_id = u.id
@@ -556,6 +557,7 @@ def get_all_balances():
             "user_id": r["user_id"],
             "name":    r["name"],
             "color":   r["color"],
+            "photo":   r["profile_photo"],
             "earned":  earned,
             "spent":   spent,
             "balance": earned - spent,
@@ -612,7 +614,7 @@ def get_pending_redemptions():
     with _conn() as conn:
         return conn.execute("""
             SELECT red.*, u.name AS user_name, u.color AS user_color,
-                   r.name AS reward_name, r.points_cost
+                   u.profile_photo AS user_photo, r.name AS reward_name, r.points_cost
             FROM redemptions red
             JOIN users u ON red.user_id = u.id
             JOIN rewards r ON red.reward_id = r.id

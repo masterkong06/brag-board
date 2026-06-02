@@ -1,0 +1,10 @@
+{% macro avatar_chip(name, color, photo=None, size='') %}
+<div class="avatar-chip {{ size }}" style="background:{{ color }}">
+  {%- if photo %}
+  <img src="{{ url_for('static', filename='uploads/profiles/' + photo) }}"
+       style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="{{ name }}">
+  {%- else %}
+  {{ name[0].upper() }}
+  {%- endif %}
+</div>
+{% endmacro %}

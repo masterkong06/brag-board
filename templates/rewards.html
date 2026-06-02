@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import avatar_chip %}
 {% block title %}Rewards — Brag Board{% endblock %}
 {% block content %}
 
@@ -17,9 +18,7 @@
     {% for entry in leaderboard %}
     <div class="d-flex align-items-center gap-3 py-2 {% if not loop.last %}border-bottom{% endif %}">
       <span class="fw-bold text-muted" style="width:1.5rem;">{{ loop.index }}</span>
-      <div class="avatar-chip avatar-chip-sm" style="background:{{ entry.color }}">
-        {{ entry.name[0].upper() }}
-      </div>
+      {{ avatar_chip(entry.name, entry.color, entry.photo, 'avatar-chip-sm') }}
       <div class="flex-grow-1 fw-semibold">{{ entry.name }}</div>
       <div class="text-end">
         <span class="fw-bold">{{ entry.balance }}</span>
@@ -105,9 +104,7 @@
     <h6 class="fw-semibold mb-2 mt-1">🔔 Pending Approvals</h6>
     {% for r in pending %}
     <div class="d-flex align-items-center gap-3 py-2 border-bottom">
-      <div class="avatar-chip avatar-chip-sm" style="background:{{ r.user_color }}">
-        {{ r.user_name[0].upper() }}
-      </div>
+      {{ avatar_chip(r.user_name, r.user_color, r.user_photo, 'avatar-chip-sm') }}
       <div class="flex-grow-1">
         <span class="fw-semibold">{{ r.user_name }}</span>
         <span class="text-muted"> wants </span>
