@@ -28,24 +28,32 @@ VAPID_CLAIMS = {"sub": "mailto:support@simianllc.com"}
 
 
 def _get_vapid_keys():
-    """Return (private_pem, public_b64) — generate and persist on first call."""
+    """Return (private_b64url_der, public_b64url) — generate and persist on first call.
+
+    Private key is stored as base64url(DER) — the format py_vapid.Vapid.from_string()
+    expects. Public key is base64url of the uncompressed EC point (what browsers need).
+    """
     pub = db.get_app_setting("vapid_public_key")
     priv = db.get_app_setting("vapid_private_key")
-    if pub and priv:
+    if pub and priv and not priv.startswith("-----"):
         return priv, pub
     if not _PUSH_AVAILABLE:
         return None, None
     from py_vapid import Vapid
     import base64
-    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+    from cryptography.hazmat.primitives.serialization import (
+        Encoding, PublicFormat, PrivateFormat, NoEncryption
+    )
     v = Vapid()
     v.generate_keys()
-    priv_pem = v.private_pem().decode()
+    # Store private key as base64url(DER-PKCS8) — what Vapid.from_string() expects
+    priv_bytes = v._private_key.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
+    priv_b64 = base64.urlsafe_b64encode(priv_bytes).rstrip(b"=").decode()
     pub_bytes = v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
     pub_b64 = base64.urlsafe_b64encode(pub_bytes).rstrip(b"=").decode()
-    db.set_app_setting("vapid_private_key", priv_pem)
+    db.set_app_setting("vapid_private_key", priv_b64)
     db.set_app_setting("vapid_public_key", pub_b64)
-    return priv_pem, pub_b64
+    return priv_b64, pub_b64
 
 
 def _send_push_to_all(title, body):
