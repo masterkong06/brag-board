@@ -54,6 +54,10 @@
           </a>
         </li>
         <li class="nav-item">
+          <button id="push-toggle-btn" class="btn btn-link nav-link text-white-50 small p-0"
+                  title="Enable notifications" style="display:none">🔔</button>
+        </li>
+        <li class="nav-item">
           <a href="{{ url_for('logout') }}" class="nav-link text-white-50 small">Sign out</a>
         </li>
       </ul>
@@ -87,42 +91,87 @@ document.querySelectorAll('.alert.alert-dismissible').forEach(function(el) {
 
 {% if session.user_id %}
 <script>
-// PWA Badge API — sets a dot on the home screen icon when there are
-// new reactions on your brags since your last visit.
 (function() {
-  if (!('setAppBadge' in navigator)) return;
-
-  const STORAGE_KEY = 'brag_last_visit_{{ session.user_id }}';
-  const lastVisit = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
-  const now = Date.now();
-
-  // Count reactions added after lastVisit using the reaction timestamps
-  // We use the reaction summary embedded in the page (reaction-btn counts)
-  // As a simple heuristic: if total reactions > stored total, set badge
-  const REACTIONS_KEY = 'brag_reaction_total_{{ session.user_id }}';
-  const storedTotal = parseInt(localStorage.getItem(REACTIONS_KEY) || '0', 10);
-
-  // Count total reactions visible on page for brags NOT owned by current user
-  // (reactions from others on your brags)
-  let currentTotal = 0;
-  document.querySelectorAll('.brag-card').forEach(card => {
-    // Only count on cards belonging to current user
-    // We can't easily check this client-side, so count all reactions as proxy
-    card.querySelectorAll('.reaction-count').forEach(el => {
+  // ── Badge API dot ──────────────────────────────────────────────────────
+  if ('setAppBadge' in navigator) {
+    const REACTIONS_KEY = 'brag_reaction_total_{{ session.user_id }}';
+    const storedTotal = parseInt(localStorage.getItem(REACTIONS_KEY) || '0', 10);
+    let currentTotal = 0;
+    document.querySelectorAll('.reaction-count').forEach(el => {
       currentTotal += parseInt(el.textContent || '0', 10);
     });
-  });
-
-  if (currentTotal > storedTotal) {
-    const newCount = currentTotal - storedTotal;
-    navigator.setAppBadge(newCount).catch(() => {});
-  } else {
-    navigator.clearAppBadge().catch(() => {});
+    if (currentTotal > storedTotal) {
+      navigator.setAppBadge(currentTotal - storedTotal).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+    localStorage.setItem(REACTIONS_KEY, currentTotal);
   }
 
-  // Update stored total and last visit timestamp on page load
-  localStorage.setItem(REACTIONS_KEY, currentTotal);
-  localStorage.setItem(STORAGE_KEY, now);
+  // ── Service worker + push notifications ───────────────────────────────
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  async function getVapidKey() {
+    const r = await fetch('/push/vapid-public-key');
+    const d = await r.json();
+    return d.key;
+  }
+
+  async function subscribe(reg, vapidKey) {
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlB64ToUint8Array(vapidKey),
+    });
+    await fetch('/push/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(sub.toJSON()),
+    });
+    return sub;
+  }
+
+  const btn = document.getElementById('push-toggle-btn');
+
+  navigator.serviceWorker.register('/static/sw.js').then(async reg => {
+    const vapidKey = await getVapidKey().catch(() => null);
+    if (!vapidKey) return;
+
+    const existing = await reg.pushManager.getSubscription();
+    const isSubscribed = !!existing;
+
+    btn.style.display = '';
+    btn.title = isSubscribed ? 'Notifications on — click to disable' : 'Enable notifications';
+    btn.textContent = isSubscribed ? '🔔' : '🔕';
+
+    btn.addEventListener('click', async function() {
+      if (await reg.pushManager.getSubscription().then(s => !!s)) {
+        // Unsubscribe
+        const sub = await reg.pushManager.getSubscription();
+        await fetch('/push/unsubscribe', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({endpoint: sub.endpoint}),
+        });
+        await sub.unsubscribe();
+        btn.textContent = '🔕';
+        btn.title = 'Enable notifications';
+      } else {
+        // Subscribe
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return;
+        await subscribe(reg, vapidKey);
+        btn.textContent = '🔔';
+        btn.title = 'Notifications on — click to disable';
+      }
+    });
+  }).catch(() => {});
 })();
 </script>
 {% endif %}

@@ -8,6 +8,12 @@ import badges as badge_engine
 import mailer
 from auth import hash_password, verify_password, login_required, admin_required
 
+try:
+    from pywebpush import webpush, WebPushException
+    _PUSH_AVAILABLE = True
+except ImportError:
+    _PUSH_AVAILABLE = False
+
 app = Flask(__name__)
 _secret = os.getenv("SECRET_KEY")
 if not _secret:
@@ -17,6 +23,56 @@ if not _secret:
     print("  Sessions will not survive restarts. Set SECRET_KEY for production.\n", file=sys.stderr)
 app.secret_key = _secret
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB upload limit
+
+VAPID_CLAIMS = {"sub": "mailto:support@simianllc.com"}
+
+
+def _get_vapid_keys():
+    """Return (private_pem, public_b64) — generate and persist on first call."""
+    pub = db.get_app_setting("vapid_public_key")
+    priv = db.get_app_setting("vapid_private_key")
+    if pub and priv:
+        return priv, pub
+    if not _PUSH_AVAILABLE:
+        return None, None
+    from py_vapid import Vapid
+    import base64
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+    v = Vapid()
+    v.generate_keys()
+    priv_pem = v.private_pem().decode()
+    pub_bytes = v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+    pub_b64 = base64.urlsafe_b64encode(pub_bytes).rstrip(b"=").decode()
+    db.set_app_setting("vapid_private_key", priv_pem)
+    db.set_app_setting("vapid_public_key", pub_b64)
+    return priv_pem, pub_b64
+
+
+def _send_push_to_all(title, body):
+    """Fire push notifications to all subscribed devices — errors per-device are swallowed."""
+    if not _PUSH_AVAILABLE:
+        return
+    priv_pem, _ = _get_vapid_keys()
+    if not priv_pem:
+        return
+    import json
+    payload = json.dumps({"title": title, "body": body})
+    for sub in db.get_all_push_subscriptions():
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub["endpoint"],
+                    "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]},
+                },
+                data=payload,
+                vapid_private_key=priv_pem,
+                vapid_claims=VAPID_CLAIMS,
+            )
+        except WebPushException as e:
+            if e.response and e.response.status_code in (404, 410):
+                db.delete_push_subscription(sub["endpoint"])
+        except Exception:
+            pass
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
 PROFILE_PHOTO_FOLDER = os.path.join(UPLOAD_FOLDER, "profiles")
@@ -172,7 +228,44 @@ def post_brag():
         newly = badge_engine.check_and_award(session["user_id"])
         for b in newly:
             flash(f"{b['emoji']} New badge unlocked: <strong>{b['name']}</strong> — {b['desc']}", "success")
+        _send_push_to_all(
+            f"{session['user_name']} shared something!",
+            content[:120] + ("…" if len(content) > 120 else ""),
+        )
     return redirect(url_for("index"))
+
+
+@app.route("/push/vapid-public-key")
+@login_required
+def push_vapid_public_key():
+    _, pub = _get_vapid_keys()
+    if not pub:
+        return jsonify({"error": "push not configured"}), 503
+    return jsonify({"key": pub})
+
+
+@app.route("/push/subscribe", methods=["POST"])
+@login_required
+def push_subscribe():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "bad request"}), 400
+    endpoint = data.get("endpoint", "")
+    p256dh = data.get("keys", {}).get("p256dh", "")
+    auth = data.get("keys", {}).get("auth", "")
+    if not (endpoint and p256dh and auth):
+        return jsonify({"error": "missing fields"}), 400
+    db.upsert_push_subscription(session["user_id"], endpoint, p256dh, auth)
+    return jsonify({"ok": True})
+
+
+@app.route("/push/unsubscribe", methods=["POST"])
+@login_required
+def push_unsubscribe():
+    data = request.get_json()
+    if data and data.get("endpoint"):
+        db.delete_push_subscription(data["endpoint"])
+    return jsonify({"ok": True})
 
 
 @app.route("/brag/<int:brag_id>/edit", methods=["POST"])

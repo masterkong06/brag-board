@@ -131,6 +131,15 @@ CREATE TABLE IF NOT EXISTS app_settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    endpoint    TEXT NOT NULL UNIQUE,
+    p256dh      TEXT NOT NULL,
+    auth        TEXT NOT NULL,
+    created_at  TEXT DEFAULT (datetime('now'))
+);
 """
 
 
@@ -178,6 +187,17 @@ def init_db():
         conn.execute(
             "INSERT OR IGNORE INTO app_settings (key,value) VALUES ('denial_cooldown_hours','24')"
         )
+        # Migration: push subscriptions table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                endpoint TEXT NOT NULL UNIQUE,
+                p256dh TEXT NOT NULL,
+                auth TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
         # Migrations: Learn Hub tables (safe to run repeatedly via CREATE IF NOT EXISTS)
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS learn_categories (
@@ -1019,6 +1039,32 @@ def learn_get_user_completions(user_id):
     for r in rows:
         result.setdefault(r["task_id"], []).append(dict(r))
     return result
+
+
+# ---------------------------------------------------------------------------
+# Push subscriptions
+# ---------------------------------------------------------------------------
+
+def upsert_push_subscription(user_id, endpoint, p256dh, auth):
+    with _conn() as conn:
+        conn.execute("""
+            INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(endpoint) DO UPDATE SET
+                user_id=excluded.user_id,
+                p256dh=excluded.p256dh,
+                auth=excluded.auth
+        """, (user_id, endpoint, p256dh, auth))
+
+
+def delete_push_subscription(endpoint):
+    with _conn() as conn:
+        conn.execute("DELETE FROM push_subscriptions WHERE endpoint=?", (endpoint,))
+
+
+def get_all_push_subscriptions():
+    with _conn() as conn:
+        return conn.execute("SELECT * FROM push_subscriptions").fetchall()
 
 
 # ---------------------------------------------------------------------------
