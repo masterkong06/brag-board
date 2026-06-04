@@ -49,13 +49,13 @@ def _get_vapid_keys():
 
 
 def _send_push_to_all(title, body):
-    """Fire push notifications to all subscribed devices — errors per-device are swallowed."""
+    """Fire push notifications to all subscribed devices."""
     if not _PUSH_AVAILABLE:
         return
     priv_pem, _ = _get_vapid_keys()
     if not priv_pem:
         return
-    import json
+    import json, logging
     payload = json.dumps({"title": title, "body": body})
     for sub in db.get_all_push_subscriptions():
         try:
@@ -69,10 +69,11 @@ def _send_push_to_all(title, body):
                 vapid_claims=VAPID_CLAIMS,
             )
         except WebPushException as e:
+            logging.error("WebPushException for endpoint %s: %s", sub["endpoint"][:40], e)
             if e.response and e.response.status_code in (404, 410):
                 db.delete_push_subscription(sub["endpoint"])
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error("Push error for endpoint %s: %s", sub["endpoint"][:40], e)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
 PROFILE_PHOTO_FOLDER = os.path.join(UPLOAD_FOLDER, "profiles")
@@ -266,6 +267,14 @@ def push_unsubscribe():
     if data and data.get("endpoint"):
         db.delete_push_subscription(data["endpoint"])
     return jsonify({"ok": True})
+
+
+@app.route("/push/test", methods=["POST"])
+@admin_required
+def push_test():
+    subs = db.get_all_push_subscriptions()
+    _send_push_to_all("Test notification", f"Push is working! ({len(subs)} subscriber(s))")
+    return jsonify({"ok": True, "subscribers": len(subs)})
 
 
 @app.route("/brag/<int:brag_id>/edit", methods=["POST"])
