@@ -175,6 +175,18 @@ def post_brag():
     return redirect(url_for("index"))
 
 
+@app.route("/brag/<int:brag_id>/edit", methods=["POST"])
+@login_required
+def edit_brag(brag_id):
+    brag = db.get_brag_by_id(brag_id)
+    if brag and brag["user_id"] == session["user_id"]:
+        content = request.form.get("content", "").strip()
+        category = request.form.get("category", brag["category"])
+        if content:
+            db.update_brag(brag_id, content, category)
+    return redirect(url_for("index"))
+
+
 @app.route("/brag/<int:brag_id>/delete", methods=["POST"])
 @login_required
 def delete_brag(brag_id):

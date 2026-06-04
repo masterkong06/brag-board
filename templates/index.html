@@ -130,12 +130,20 @@
               </button>
               {% endfor %}
 
-              {# Delete (own brag only) #}
+              {# Edit / Delete (own brag only) #}
               {% if brag.user_id == current_user_id %}
-              <form method="post" action="{{ url_for('delete_brag', brag_id=brag.id) }}"
-                    class="ms-auto" onsubmit="return confirm('Remove this post?')">
-                <button type="submit" class="btn btn-link btn-sm text-muted p-0" style="font-size:.75rem">✕</button>
-              </form>
+              <div class="ms-auto d-flex gap-2 align-items-center">
+                <button type="button" class="btn btn-link btn-sm text-muted p-0"
+                        style="font-size:.75rem"
+                        data-bs-toggle="modal" data-bs-target="#editBragModal"
+                        data-brag-id="{{ brag.id }}"
+                        data-brag-content="{{ brag.content | e }}"
+                        data-brag-category="{{ brag.category }}">✏️</button>
+                <form method="post" action="{{ url_for('delete_brag', brag_id=brag.id) }}"
+                      onsubmit="return confirm('Remove this post?')">
+                  <button type="submit" class="btn btn-link btn-sm text-muted p-0" style="font-size:.75rem">✕</button>
+                </form>
+              </div>
               {% endif %}
             </div>
           </div>
@@ -172,7 +180,9 @@
         {% endif %}
 
         {% for wish in open_wishes %}
-        <div class="wish-item d-flex align-items-start gap-2 mb-2 p-2 rounded-2">
+        {% set age_opacity = [0.3, 1.0 - wish.days_old / 7.0] | max %}
+        <div class="wish-item d-flex align-items-start gap-2 mb-2 p-2 rounded-2"
+             style="opacity: {{ '%.2f' | format(age_opacity) }}">
           {{ avatar_chip(wish.user_name, wish.user_color, wish.user_photo, 'avatar-chip-sm flex-shrink-0 mt-1') }}
           <div class="flex-grow-1 min-w-0">
             <div class="small fw-semibold text-muted">{{ wish.user_name }} wants to try…</div>
@@ -224,6 +234,33 @@
   </div>
 
 </div>
+
+{# Edit brag modal #}
+<div class="modal fade" id="editBragModal" tabindex="-1" aria-labelledby="editBragModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="editBragForm">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title" id="editBragModalLabel">Edit post</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <textarea name="content" id="editBragContent" class="form-control mb-2" rows="3" required></textarea>
+          <select name="category" id="editBragCategory" class="form-select form-select-sm w-auto">
+            {% for key, ico, label in categories %}
+            <option value="{{ key }}">{{ ico }} {{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -407,5 +444,14 @@ function bindReactionBtn(btn) {
 }
 
 document.querySelectorAll('.reaction-btn').forEach(bindReactionBtn);
+
+// Edit brag modal — pre-fill from data attributes
+document.getElementById('editBragModal').addEventListener('show.bs.modal', function(e) {
+  const btn = e.relatedTarget;
+  const bragId = btn.dataset.bragId;
+  document.getElementById('editBragContent').value = btn.dataset.bragContent;
+  document.getElementById('editBragCategory').value = btn.dataset.bragCategory;
+  document.getElementById('editBragForm').action = '/brag/' + bragId + '/edit';
+});
 </script>
 {% endblock %}

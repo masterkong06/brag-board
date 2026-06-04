@@ -323,6 +323,14 @@ def get_brag_by_id(brag_id):
         ).fetchone()
 
 
+def update_brag(brag_id, content, category):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE brags SET content=?, category=? WHERE id=?",
+            (content, category, brag_id),
+        )
+
+
 def delete_brag(brag_id):
     with _conn() as conn:
         conn.execute("DELETE FROM reactions WHERE brag_id = ?", (brag_id,))
@@ -407,7 +415,8 @@ def get_wishes():
     with _conn() as conn:
         return conn.execute("""
             SELECT w.*, u.name AS user_name, u.color AS user_color,
-                   u.profile_photo AS user_photo, b.content AS fulfilled_content
+                   u.profile_photo AS user_photo, b.content AS fulfilled_content,
+                   CAST(julianday('now') - julianday(w.created_at) AS INTEGER) AS days_old
             FROM wishes w
             JOIN users u ON w.user_id = u.id
             LEFT JOIN brags b ON w.fulfilled_by_brag_id = b.id
