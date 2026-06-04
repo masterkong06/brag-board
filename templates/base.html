@@ -139,7 +139,7 @@ document.querySelectorAll('.alert.alert-dismissible').forEach(function(el) {
 
   const btn = document.getElementById('push-toggle-btn');
 
-  navigator.serviceWorker.register('/static/sw.js').then(async reg => {
+  navigator.serviceWorker.register('/sw.js', {scope: '/'}).then(async reg => {
     const vapidKey = await getVapidKey().catch(() => null);
     if (!vapidKey) return;
 

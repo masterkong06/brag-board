@@ -244,6 +244,14 @@ def post_brag():
     return redirect(url_for("index"))
 
 
+@app.route("/sw.js")
+def service_worker():
+    response = app.send_static_file("sw.js")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.route("/push/vapid-public-key")
 @login_required
 def push_vapid_public_key():
