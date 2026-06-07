@@ -6,7 +6,8 @@
   <a href="{{ url_for('learn') }}" class="btn btn-sm btn-outline-secondary">← View Learn Hub</a>
 </div>
 
-<!-- Flash messages already handled by base -->
+{% set buckets = categories | selectattr("parent_id", "none") | list %}
+{% set subcats = categories | rejectattr("parent_id", "none") | list %}
 
 <div class="row g-4">
 
@@ -14,35 +15,68 @@
   <div class="col-12 col-lg-4">
     <div class="card" style="background:#12172a;border-color:#1e2a45;">
       <div class="card-header" style="background:#0d1117;border-color:#1e2a45;">
-        <strong class="text-white">Categories</strong>
+        <strong class="text-white">Life-Skill Buckets</strong>
+        <span class="text-muted small ms-2">top-level</span>
       </div>
       <div class="card-body">
-        {% for cat in categories %}
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span>{{ cat.emoji }} {{ cat.name }}</span>
-          <span class="text-muted small">(order: {{ cat.display_order }})</span>
-          <form method="POST" action="{{ url_for('learn_admin_delete_category', cat_id=cat.id) }}" class="ms-auto">
-            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete category?')">✕</button>
-          </form>
+        {% for cat in buckets %}
+        <div class="d-flex align-items-center gap-2 mb-1 {{ '' if cat.is_active else 'opacity-50' }}">
+          <span class="fw-semibold">{{ cat.emoji }} {{ cat.name }}</span>
+          <span class="badge {{ 'bg-success' if cat.is_active else 'bg-secondary' }} ms-1">
+            {{ 'on' if cat.is_active else 'off' }}
+          </span>
+          <div class="d-flex gap-1 ms-auto">
+            <form method="POST" action="{{ url_for('learn_admin_toggle_category', cat_id=cat.id) }}">
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ 'Disable' if cat.is_active else 'Enable' }}">
+                {{ '⏸' if cat.is_active else '▶' }}
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('learn_admin_delete_category', cat_id=cat.id) }}">
+              <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="return confirm('Delete bucket?')">✕</button>
+            </form>
+          </div>
         </div>
+        <!-- Sub-categories under this bucket -->
+        {% for sub in subcats if sub.parent_id == cat.id %}
+        <div class="d-flex align-items-center gap-2 mb-1 ms-3 {{ '' if sub.is_active else 'opacity-50' }}">
+          <span class="text-muted small">↳ {{ sub.emoji }} {{ sub.name }}</span>
+          <div class="d-flex gap-1 ms-auto">
+            <form method="POST" action="{{ url_for('learn_admin_toggle_category', cat_id=sub.id) }}">
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1">{{ '⏸' if sub.is_active else '▶' }}</button>
+            </form>
+            <form method="POST" action="{{ url_for('learn_admin_delete_category', cat_id=sub.id) }}">
+              <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="return confirm('Delete category?')">✕</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
         {% else %}
-        <p class="text-muted small">No categories yet.</p>
+        <p class="text-muted small">No buckets yet.</p>
         {% endfor %}
 
         <hr style="border-color:#1e2a45;">
+        <p class="text-muted small mb-2">Add category / sub-category:</p>
         <form method="POST" action="{{ url_for('learn_admin_new_category') }}">
           <div class="mb-2">
-            <input type="text" name="name" class="form-control form-control-sm" placeholder="Category name" required>
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="Name" required>
           </div>
           <div class="row g-2 mb-2">
-            <div class="col-5">
+            <div class="col-4">
               <input type="text" name="emoji" class="form-control form-control-sm" placeholder="Emoji" value="📚">
             </div>
-            <div class="col-7">
-              <input type="number" name="display_order" class="form-control form-control-sm" placeholder="Sort order" value="0">
+            <div class="col-4">
+              <input type="number" name="display_order" class="form-control form-control-sm" placeholder="Order" value="0">
+            </div>
+            <div class="col-4">
+              <select name="parent_id" class="form-select form-select-sm">
+                <option value="">Top-level</option>
+                {% for b in buckets %}
+                <option value="{{ b.id }}">{{ b.emoji }} {{ b.name }}</option>
+                {% endfor %}
+              </select>
             </div>
           </div>
-          <button class="btn btn-sm btn-primary w-100">+ Add Category</button>
+          <button class="btn btn-sm btn-primary w-100">+ Add</button>
         </form>
       </div>
     </div>
@@ -72,6 +106,41 @@
           {% endfor %}
           <button class="btn btn-sm btn-primary w-100 mt-2">Save Settings</button>
         </form>
+      </div>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="card mt-4" style="background:#12172a;border-color:#1e2a45;">
+      <div class="card-header d-flex align-items-center justify-content-between" style="background:#0d1117;border-color:#1e2a45;">
+        <strong class="text-white">Topic Suggestions</strong>
+        {% if suggestions %}
+        <span class="badge bg-warning text-dark">{{ suggestions|length }}</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if not suggestions %}
+        <p class="text-muted small mb-0">No pending suggestions.</p>
+        {% else %}
+        {% for s in suggestions %}
+        <div class="mb-3 pb-3" style="border-bottom:1px solid #1e2a45;">
+          <div class="fw-semibold text-white small">{{ s.title }}</div>
+          {% if s.description %}
+          <div class="text-muted small">{{ s.description }}</div>
+          {% endif %}
+          <div class="text-muted small mb-2">by {{ s.user_name }}</div>
+          <div class="d-flex gap-2">
+            <form method="POST" action="{{ url_for('learn_admin_resolve_suggestion', s_id=s.id) }}">
+              <input type="hidden" name="status" value="approved">
+              <button class="btn btn-sm btn-success py-0">✓ Approve</button>
+            </form>
+            <form method="POST" action="{{ url_for('learn_admin_resolve_suggestion', s_id=s.id) }}">
+              <input type="hidden" name="status" value="rejected">
+              <button class="btn btn-sm btn-outline-danger py-0">✕ Reject</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
       </div>
     </div>
   </div>
@@ -137,9 +206,22 @@
             <div class="col-12 col-md-4">
               <select name="category_id" class="form-select" required>
                 <option value="">— Category —</option>
-                {% for cat in categories %}
-                <option value="{{ cat.id }}">{{ cat.emoji }} {{ cat.name }}</option>
+                {% for b in buckets %}
+                <optgroup label="{{ b.emoji }} {{ b.name }}">
+                  <option value="{{ b.id }}">{{ b.emoji }} {{ b.name }} (bucket)</option>
+                  {% for sub in subcats if sub.parent_id == b.id %}
+                  <option value="{{ sub.id }}">↳ {{ sub.emoji }} {{ sub.name }}</option>
+                  {% endfor %}
+                </optgroup>
                 {% endfor %}
+                {% set orphans = subcats | selectattr("parent_id", "none") | list %}
+                {% if orphans %}
+                <optgroup label="Other">
+                  {% for cat in orphans %}
+                  <option value="{{ cat.id }}">{{ cat.emoji }} {{ cat.name }}</option>
+                  {% endfor %}
+                </optgroup>
+                {% endif %}
               </select>
             </div>
           </div>

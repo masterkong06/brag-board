@@ -774,32 +774,51 @@ def learn_complete(task_id):
 @app.route("/learn/admin")
 @admin_required
 def learn_admin():
-    categories = db.learn_get_categories()
-    tasks = db.learn_get_all_tasks()
-    settings = db.learn_get_settings()
-    return render_template("learn_admin.html", categories=categories, tasks=tasks, settings=settings)
+    categories   = db.learn_get_all_categories()
+    tasks        = db.learn_get_all_tasks()
+    settings     = db.learn_get_settings()
+    suggestions  = db.learn_get_suggestions(status="pending")
+    return render_template("learn_admin.html",
+                           categories=categories, tasks=tasks,
+                           settings=settings, suggestions=suggestions)
 
 
 @app.route("/learn/admin/category/new", methods=["POST"])
 @admin_required
 def learn_admin_new_category():
-    name  = request.form.get("name", "").strip()
-    emoji = request.form.get("emoji", "📚").strip() or "📚"
-    order = int(request.form.get("display_order", 0))
+    name      = request.form.get("name", "").strip()
+    emoji     = request.form.get("emoji", "📚").strip() or "📚"
+    order     = int(request.form.get("display_order", 0))
+    parent_id = request.form.get("parent_id") or None
+    if parent_id:
+        parent_id = int(parent_id)
     if name:
-        db.learn_create_category(name, emoji, order)
+        db.learn_create_category(name, emoji, order, parent_id=parent_id)
     return redirect(url_for("learn_admin"))
 
 
 @app.route("/learn/admin/category/<int:cat_id>/edit", methods=["POST"])
 @admin_required
 def learn_admin_edit_category(cat_id):
+    parent_id = request.form.get("parent_id") or None
+    if parent_id:
+        parent_id = int(parent_id)
+    is_active = int(request.form.get("is_active", 1))
     db.learn_update_category(
         cat_id,
         request.form.get("name", "").strip(),
         request.form.get("emoji", "📚").strip() or "📚",
         int(request.form.get("display_order", 0)),
+        parent_id=parent_id,
+        is_active=is_active,
     )
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/admin/category/<int:cat_id>/toggle", methods=["POST"])
+@admin_required
+def learn_admin_toggle_category(cat_id):
+    db.learn_toggle_category(cat_id)
     return redirect(url_for("learn_admin"))
 
 
@@ -894,6 +913,29 @@ def learn_admin_settings():
     return redirect(url_for("learn_admin"))
 
 
+@app.route("/learn/admin/suggestion/<int:s_id>/resolve", methods=["POST"])
+@admin_required
+def learn_admin_resolve_suggestion(s_id):
+    status = request.form.get("status", "rejected")
+    if status in ("approved", "rejected"):
+        db.learn_resolve_suggestion(s_id, status)
+    return redirect(url_for("learn_admin"))
+
+
+@app.route("/learn/suggest", methods=["POST"])
+@login_required
+def learn_suggest():
+    title   = request.form.get("title", "").strip()
+    desc    = request.form.get("description", "").strip()
+    cat_id  = request.form.get("category_id") or None
+    if cat_id:
+        cat_id = int(cat_id)
+    if title:
+        db.learn_submit_suggestion(session["user_id"], title, desc, cat_id)
+        flash("Thanks! Your suggestion has been submitted for review.", "success")
+    return redirect(url_for("learn"))
+
+
 # ---------------------------------------------------------------------------
 # Bootstrap — runs under both gunicorn and `python app.py`
 # ---------------------------------------------------------------------------
@@ -901,6 +943,7 @@ def learn_admin_settings():
 db.init_db()
 db.seed_category_points()
 db.learn_seed_settings()
+db.learn_seed_buckets()
 _seed_admin()
 
 if __name__ == "__main__":

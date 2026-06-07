@@ -3,9 +3,47 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h4 class="mb-0">📚 Learn Hub</h4>
-  {% if session.is_admin %}
-  <a href="{{ url_for('learn_admin') }}" class="btn btn-sm btn-outline-secondary">⚙️ Manage</a>
-  {% endif %}
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#suggestModal">💡 Suggest a topic</button>
+    {% if session.is_admin %}
+    <a href="{{ url_for('learn_admin') }}" class="btn btn-sm btn-outline-secondary">⚙️ Manage</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Suggest Modal -->
+<div class="modal fade" id="suggestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:#12172a;border-color:#1e2a45;">
+      <div class="modal-header" style="border-color:#1e2a45;">
+        <h5 class="modal-title text-white">💡 Suggest a topic</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('learn_suggest') }}">
+        <div class="modal-body">
+          <p class="text-muted small">"What exactly is insurance and why do we need it?" — submit your question and we'll turn it into a lesson.</p>
+          <div class="mb-3">
+            <input type="text" name="title" class="form-control" placeholder="What do you want to learn about?" required>
+          </div>
+          <div class="mb-3">
+            <textarea name="description" class="form-control" rows="2" placeholder="More detail (optional)"></textarea>
+          </div>
+          <div class="mb-1">
+            <select name="category_id" class="form-select">
+              <option value="">— Category (optional) —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}">{{ cat.emoji }} {{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:#1e2a45;">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 {% if not categories %}

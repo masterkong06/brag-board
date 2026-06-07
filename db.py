@@ -904,32 +904,98 @@ def learn_set_setting(key, value):
 
 
 def learn_get_categories():
+    """Active categories only — used by user-facing pages."""
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM learn_categories WHERE is_active=1 ORDER BY display_order, name"
+        ).fetchall()
+
+
+def learn_get_all_categories():
+    """All categories including inactive — used by admin pages."""
     with _conn() as conn:
         return conn.execute(
             "SELECT * FROM learn_categories ORDER BY display_order, name"
         ).fetchall()
 
 
-def learn_create_category(name, emoji, display_order=0):
+def learn_create_category(name, emoji, display_order=0, parent_id=None, is_active=1):
     with _conn() as conn:
         cur = conn.execute(
-            "INSERT INTO learn_categories (name, emoji, display_order) VALUES (?,?,?)",
-            (name, emoji, display_order),
+            "INSERT INTO learn_categories (name, emoji, display_order, parent_id, is_active) VALUES (?,?,?,?,?)",
+            (name, emoji, display_order, parent_id, is_active),
         )
         return cur.lastrowid
 
 
-def learn_update_category(cat_id, name, emoji, display_order):
+def learn_update_category(cat_id, name, emoji, display_order, parent_id=None, is_active=1):
     with _conn() as conn:
         conn.execute(
-            "UPDATE learn_categories SET name=?, emoji=?, display_order=? WHERE id=?",
-            (name, emoji, display_order, cat_id),
+            "UPDATE learn_categories SET name=?, emoji=?, display_order=?, parent_id=?, is_active=? WHERE id=?",
+            (name, emoji, display_order, parent_id, is_active, cat_id),
+        )
+
+
+def learn_toggle_category(cat_id):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE learn_categories SET is_active = 1 - is_active WHERE id=?", (cat_id,)
         )
 
 
 def learn_delete_category(cat_id):
     with _conn() as conn:
         conn.execute("DELETE FROM learn_categories WHERE id=?", (cat_id,))
+
+
+DEFAULT_BUCKETS = [
+    ("Home",   "🏠", 0),
+    ("Money",  "💰", 1),
+    ("Self",   "🧠", 2),
+    ("People", "🤝", 3),
+    ("Future", "🎯", 4),
+]
+
+
+def learn_seed_buckets():
+    with _conn() as conn:
+        count = conn.execute("SELECT COUNT(*) FROM learn_categories WHERE parent_id IS NULL").fetchone()[0]
+        if count == 0:
+            for name, emoji, order in DEFAULT_BUCKETS:
+                conn.execute(
+                    "INSERT INTO learn_categories (name, emoji, display_order, parent_id, is_active) VALUES (?,?,?,NULL,1)",
+                    (name, emoji, order),
+                )
+
+
+def learn_submit_suggestion(user_id, title, description, category_id=None):
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO learn_task_suggestions (user_id, title, description, category_id) VALUES (?,?,?,?)",
+            (user_id, title, description, category_id),
+        )
+        return cur.lastrowid
+
+
+def learn_get_suggestions(status=None):
+    with _conn() as conn:
+        if status:
+            return conn.execute(
+                "SELECT s.*, u.name AS user_name FROM learn_task_suggestions s "
+                "JOIN users u ON s.user_id=u.id WHERE s.status=? ORDER BY s.created_at DESC",
+                (status,),
+            ).fetchall()
+        return conn.execute(
+            "SELECT s.*, u.name AS user_name FROM learn_task_suggestions s "
+            "JOIN users u ON s.user_id=u.id ORDER BY s.created_at DESC"
+        ).fetchall()
+
+
+def learn_resolve_suggestion(suggestion_id, status):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE learn_task_suggestions SET status=? WHERE id=?", (status, suggestion_id)
+        )
 
 
 def learn_get_tasks(category_id=None):
