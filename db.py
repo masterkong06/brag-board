@@ -76,7 +76,9 @@ CREATE TABLE IF NOT EXISTS learn_categories (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     name          TEXT NOT NULL,
     emoji         TEXT NOT NULL DEFAULT '📚',
-    display_order INTEGER NOT NULL DEFAULT 0
+    display_order INTEGER NOT NULL DEFAULT 0,
+    parent_id     INTEGER REFERENCES learn_categories(id),
+    is_active     INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS learn_tasks (
@@ -125,6 +127,16 @@ CREATE TABLE IF NOT EXISTS learn_completions (
 CREATE TABLE IF NOT EXISTS learn_settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS learn_task_suggestions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    title       TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    category_id INTEGER REFERENCES learn_categories(id),
+    status      TEXT NOT NULL DEFAULT 'pending',
+    created_at  TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -230,7 +242,24 @@ def init_db():
                 completed_at TEXT DEFAULT (datetime('now'))
             );
             CREATE TABLE IF NOT EXISTS learn_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS learn_task_suggestions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                title TEXT NOT NULL, description TEXT DEFAULT '',
+                category_id INTEGER REFERENCES learn_categories(id),
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT DEFAULT (datetime('now'))
+            );
         """)
+        # Migration: life-skills category columns
+        for col, defn in [
+            ("parent_id", "INTEGER REFERENCES learn_categories(id)"),
+            ("is_active",  "INTEGER NOT NULL DEFAULT 1"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE learn_categories ADD COLUMN {col} {defn}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
 
 
 # ---------------------------------------------------------------------------
