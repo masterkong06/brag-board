@@ -1014,6 +1014,19 @@ def learn_get_tasks(category_id=None):
         ).fetchall()
 
 
+def learn_get_tasks_for_bucket(bucket_id):
+    """Return active tasks assigned to a bucket OR any of its sub-categories."""
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT t.*, c.name AS cat_name, c.emoji AS cat_emoji "
+            "FROM learn_tasks t JOIN learn_categories c ON t.category_id=c.id "
+            "WHERE t.is_active=1 "
+            "  AND (c.id=? OR c.parent_id=?) "
+            "ORDER BY c.display_order, t.title",
+            (bucket_id, bucket_id),
+        ).fetchall()
+
+
 def learn_get_all_tasks():
     with _conn() as conn:
         return conn.execute(

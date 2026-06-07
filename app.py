@@ -648,18 +648,35 @@ def _extract_youtube_id(url):
 @app.route("/learn")
 @login_required
 def learn():
-    categories = db.learn_get_categories()
-    cat_id = request.args.get("cat", type=int)
+    all_cats   = db.learn_get_categories()
+    buckets    = [c for c in all_cats if c["parent_id"] is None]
+    subcats    = [c for c in all_cats if c["parent_id"] is not None]
+
+    bucket_id  = request.args.get("bucket", type=int)
+    cat_id     = request.args.get("cat", type=int)
+
     if cat_id:
         tasks = db.learn_get_tasks(category_id=cat_id)
+        # Ensure the parent bucket stays highlighted
+        parent = next((c for c in subcats if c["id"] == cat_id), None)
+        if parent and not bucket_id:
+            bucket_id = parent["parent_id"]
+    elif bucket_id:
+        tasks = db.learn_get_tasks_for_bucket(bucket_id)
     else:
         tasks = db.learn_get_tasks()
+
+    active_subcats = [c for c in subcats if c["parent_id"] == bucket_id] if bucket_id else []
     completions = db.learn_get_user_completions(session["user_id"])
     return render_template(
         "learn.html",
-        categories=categories,
+        categories=all_cats,
+        buckets=buckets,
+        subcats=subcats,
+        active_subcats=active_subcats,
         tasks=tasks,
         completions=completions,
+        active_bucket=bucket_id,
         active_cat=cat_id,
     )
 

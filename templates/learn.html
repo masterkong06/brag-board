@@ -46,33 +46,54 @@
   </div>
 </div>
 
-{% if not categories %}
+{% if not buckets and not categories %}
 <div class="text-center text-muted py-5">
   <div style="font-size:3rem">📚</div>
-  <p class="mt-2">No tasks yet — check back soon!</p>
+  <p class="mt-2">No topics yet — check back soon!</p>
 </div>
 {% else %}
 
-<!-- Category tabs -->
-<div class="d-flex flex-wrap gap-2 mb-4">
+<!-- Bucket tabs (top-level) -->
+<div class="d-flex flex-wrap gap-2 mb-2">
   <a href="{{ url_for('learn') }}"
-     class="btn btn-sm {{ 'btn-primary' if not active_cat else 'btn-outline-secondary' }}">All</a>
-  {% for cat in categories %}
-  <a href="{{ url_for('learn', cat=cat.id) }}"
-     class="btn btn-sm {{ 'btn-primary' if active_cat == cat.id else 'btn-outline-secondary' }}">
-    {{ cat.emoji }} {{ cat.name }}
+     class="btn btn-sm {{ 'btn-primary' if not active_bucket and not active_cat else 'btn-outline-secondary' }}">
+    All
+  </a>
+  {% for b in buckets %}
+  <a href="{{ url_for('learn', bucket=b.id) }}"
+     class="btn btn-sm {{ 'btn-primary' if active_bucket == b.id else 'btn-outline-secondary' }}">
+    {{ b.emoji }} {{ b.name }}
   </a>
   {% endfor %}
 </div>
 
+<!-- Sub-category pills (shown when a bucket is selected and has sub-cats) -->
+{% if active_subcats %}
+<div class="d-flex flex-wrap gap-2 mb-3 ms-2">
+  <a href="{{ url_for('learn', bucket=active_bucket) }}"
+     class="btn btn-sm btn-sm {{ 'btn-secondary' if not active_cat else 'btn-outline-secondary' }} py-0"
+     style="font-size:.78rem;">All {{ (buckets | selectattr('id', 'equalto', active_bucket) | first).name }}</a>
+  {% for sub in active_subcats %}
+  <a href="{{ url_for('learn', bucket=active_bucket, cat=sub.id) }}"
+     class="btn btn-sm py-0 {{ 'btn-secondary' if active_cat == sub.id else 'btn-outline-secondary' }}"
+     style="font-size:.78rem;">
+    {{ sub.emoji }} {{ sub.name }}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="mb-3"></div>
+{% endif %}
+
 <!-- Task cards -->
 {% if not tasks %}
-<p class="text-muted">No tasks in this category yet.</p>
+<div class="text-center text-muted py-4">
+  <p class="mb-0">No tasks in this area yet.</p>
+</div>
 {% else %}
 <div class="row g-3">
   {% for task in tasks %}
-  {% set user_completions = completions.get(task.id, []) %}
-  {% set done = user_completions|length > 0 %}
+  {% set done = completions.get(task.id, [])|length > 0 %}
   <div class="col-12 col-md-6 col-lg-4">
     <a href="{{ url_for('learn_task', task_id=task.id) }}" class="text-decoration-none">
       <div class="card h-100 {{ 'border-success' if done else '' }}" style="background:#12172a;border-color:#1e2a45;">
