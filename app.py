@@ -820,7 +820,7 @@ def learn_admin_edit_category(cat_id):
     parent_id = request.form.get("parent_id") or None
     if parent_id:
         parent_id = int(parent_id)
-    is_active = int(request.form.get("is_active", 1))
+    is_active = 1 if request.form.get("is_active") == "1" else 0
     db.learn_update_category(
         cat_id,
         request.form.get("name", "").strip(),

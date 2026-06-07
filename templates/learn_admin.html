@@ -19,6 +19,7 @@
         <span class="text-muted small ms-2">top-level</span>
       </div>
       <div class="card-body">
+        {% set all_for_edit = buckets + subcats %}
         {% for cat in buckets %}
         <div class="d-flex align-items-center gap-2 mb-1 {{ '' if cat.is_active else 'opacity-50' }}">
           <span class="fw-semibold">{{ cat.emoji }} {{ cat.name }}</span>
@@ -26,6 +27,7 @@
             {{ 'on' if cat.is_active else 'off' }}
           </span>
           <div class="d-flex gap-1 ms-auto">
+            <button class="btn btn-sm btn-outline-info py-0 px-1" data-bs-toggle="modal" data-bs-target="#editCatModal{{ cat.id }}">✏️</button>
             <form method="POST" action="{{ url_for('learn_admin_toggle_category', cat_id=cat.id) }}">
               <button class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ 'Disable' if cat.is_active else 'Enable' }}">
                 {{ '⏸' if cat.is_active else '▶' }}
@@ -41,6 +43,7 @@
         <div class="d-flex align-items-center gap-2 mb-1 ms-3 {{ '' if sub.is_active else 'opacity-50' }}">
           <span class="text-muted small">↳ {{ sub.emoji }} {{ sub.name }}</span>
           <div class="d-flex gap-1 ms-auto">
+            <button class="btn btn-sm btn-outline-info py-0 px-1" data-bs-toggle="modal" data-bs-target="#editCatModal{{ sub.id }}">✏️</button>
             <form method="POST" action="{{ url_for('learn_admin_toggle_category', cat_id=sub.id) }}">
               <button class="btn btn-sm btn-outline-secondary py-0 px-1">{{ '⏸' if sub.is_active else '▶' }}</button>
             </form>
@@ -52,6 +55,55 @@
         {% endfor %}
         {% else %}
         <p class="text-muted small">No buckets yet.</p>
+        {% endfor %}
+
+        <!-- Edit modals (one per category) -->
+        {% for cat in all_for_edit %}
+        <div class="modal fade" id="editCatModal{{ cat.id }}" tabindex="-1">
+          <div class="modal-dialog modal-sm">
+            <div class="modal-content" style="background:#12172a;border-color:#1e2a45;">
+              <div class="modal-header" style="border-color:#1e2a45;">
+                <h6 class="modal-title text-white">Edit: {{ cat.emoji }} {{ cat.name }}</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <form method="POST" action="{{ url_for('learn_admin_edit_category', cat_id=cat.id) }}">
+                <div class="modal-body">
+                  <div class="mb-2">
+                    <label class="text-muted small mb-0">Name</label>
+                    <input type="text" name="name" class="form-control form-control-sm" value="{{ cat.name }}" required>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-5">
+                      <label class="text-muted small mb-0">Emoji</label>
+                      <input type="text" name="emoji" class="form-control form-control-sm" value="{{ cat.emoji }}">
+                    </div>
+                    <div class="col-7">
+                      <label class="text-muted small mb-0">Sort order</label>
+                      <input type="number" name="display_order" class="form-control form-control-sm" value="{{ cat.display_order }}">
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="text-muted small mb-0">Parent bucket</label>
+                    <select name="parent_id" class="form-select form-select-sm">
+                      <option value="">Top-level (bucket)</option>
+                      {% for b in buckets if b.id != cat.id %}
+                      <option value="{{ b.id }}" {{ 'selected' if cat.parent_id == b.id }}>{{ b.emoji }} {{ b.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_active" value="1" id="active{{ cat.id }}" {{ 'checked' if cat.is_active }}>
+                    <label class="form-check-label text-muted small" for="active{{ cat.id }}">Active</label>
+                  </div>
+                </div>
+                <div class="modal-footer" style="border-color:#1e2a45;">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
         {% endfor %}
 
         <hr style="border-color:#1e2a45;">
