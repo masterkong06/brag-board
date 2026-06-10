@@ -1,6 +1,7 @@
 import os
 import uuid
 import secrets
+from datetime import timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from werkzeug.utils import secure_filename
 import db
@@ -23,6 +24,7 @@ if not _secret:
     print("  Sessions will not survive restarts. Set SECRET_KEY for production.\n", file=sys.stderr)
 app.secret_key = _secret
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB upload limit
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
 VAPID_CLAIMS = {"sub": "mailto:support@simianllc.com"}
 
@@ -172,6 +174,7 @@ def login():
         password = request.form.get("password", "")
         user = db.get_user_by_username(username)
         if user and verify_password(password, user["password_hash"]):
+            session.permanent = True
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
             session["username"] = user["username"]
